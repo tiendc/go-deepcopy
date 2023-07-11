@@ -29,7 +29,7 @@ go get github.com/tiendc/go-deepcopy
 
 ### First example
 
-  [Playground](https://go.dev/play/p/GsgjDl1vxVd)
+[Playground](https://go.dev/play/p/GsgjDl1vxVd)
 
 ```go
     type SS struct {
@@ -65,7 +65,7 @@ go get github.com/tiendc/go-deepcopy
 
 ### Copy between struct fields with different names
 
-  [Playground](https://go.dev/play/p/MY8ReuT2K3Y)
+[Playground](https://go.dev/play/p/MY8ReuT2K3Y)
 
 ```go
     type S struct {
@@ -92,7 +92,7 @@ go get github.com/tiendc/go-deepcopy
 
 ### Ignore copying struct fields
 
-- By default, matching fields will be copied between. If you don't want to copy them, use tag `required`.
+- By default, matching fields will be copied. If you don't want to copy a field, use tag `-`.
 
   [Playground](https://go.dev/play/p/RtlmWN1AEsy)
 
@@ -126,7 +126,7 @@ go get github.com/tiendc/go-deepcopy
 
 ### Copy between struct fields and methods
 
-  [Playground 1](https://go.dev/play/p/zb2NU32G2mG)
+  [Playground 1](https://go.dev/play/p/zb2NU32G2mG) /
   [Playground 2](https://go.dev/play/p/C3FpFwzoPFm)
 
 ```go
@@ -218,8 +218,8 @@ func (d *D) CopyX(i int) error {
 ```
 
 - Ignore error ErrTypeNonCopyable, the copy will not return that error, but the copy won't be performed.
-
-  [Playground 1](https://go.dev/play/p/u63SwMKNxU5)
+  
+  [Playground 1](https://go.dev/play/p/u63SwMKNxU5) /
   [Playground 2](https://go.dev/play/p/ZomOQW2PsPP)
 
 ```go
