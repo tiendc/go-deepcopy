@@ -141,6 +141,14 @@ func Test_Copy_array(t *testing.T) {
 
 	t.Run("#6: slice of str -> array of str (dst has filled less)", func(t *testing.T) {
 		var s []string = []string{"1", "2", "3"}
+		var d [2]string = [2]string{"x", "x"}
+		err := Copy(&d, s)
+		assert.Nil(t, err)
+		assert.Equal(t, [2]string{"1", "2"}, d)
+	})
+
+	t.Run("#7: slice of str -> array of str (dst has filled more)", func(t *testing.T) {
+		var s []string = []string{"1", "2", "3"}
 		var d [5]string = [5]string{"1", "2", "3", "4", "5"}
 		err := Copy(&d, s)
 		assert.Nil(t, err)
