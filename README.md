@@ -7,7 +7,7 @@
 - True deep copy
 - Very fast (see [benchmarks](#benchmarks) section)
 - Ability to copy data between convertible types (for example: copy from `int` to `float`)
-- Ability to copy between **pointers** and **values** (for example: copy from `*int` to `int`)
+- Ability to copy between `pointers` and `values` (for example: copy from `*int` to `int`)
 - Ability to copy between struct fields and methods
 - Ability to copy between unexported struct fields
 - Ability to configure copying behavior
@@ -52,7 +52,7 @@ go get github.com/tiendc/go-deepcopy
     }
     src := []S{{I: 1, U: 2, St: "3", V: SS{B: true}}, {I: 11, U: 22, St: "33", V: SS{B: false}}}
     var dst []D
-    err := deepcopy.Copy(&dst, src)
+    _ = deepcopy.Copy(&dst, src)
 
     for _, d := range dst {
         fmt.Printf("%+v\n", d)
@@ -79,7 +79,7 @@ go get github.com/tiendc/go-deepcopy
     }
     src := []S{{X: 1, U: 2, St: "3"}, {X: 11, U: 22, St: "33"}}
     var dst []D
-    err := deepcopy.Copy(&dst, src)
+    _ = deepcopy.Copy(&dst, src)
 
     for _, d := range dst {
         fmt.Printf("%+v\n", d)
@@ -97,7 +97,7 @@ go get github.com/tiendc/go-deepcopy
   [Playground](https://go.dev/play/p/RtlmWN1AEsy)
 
 ```go
-    // S and D both have `I` field, but we don't want to copy
+    // S and D both have `I` field, but we don't want to copy it
     // Tag `-` can be used in both struct definitions or just in one
     type S struct {
         I  int
@@ -110,10 +110,7 @@ go get github.com/tiendc/go-deepcopy
     }
     src := []S{{I: 1, U: 2, St: "3"}, {I: 11, U: 22, St: "33"}}
     var dst []D
-    err := deepcopy.Copy(&dst, src)
-    if err != nil {
-        fmt.Println("error:", err)
-    }
+    _ = deepcopy.Copy(&dst, src)
 
     for _, d := range dst {
         fmt.Printf("%+v\n", d)
@@ -141,7 +138,7 @@ type D struct {
     U uint
 }
 
-// Copy method should be in form of "Copy" + source field name (or key) and return `error` type
+// Copy method should be in form of `Copy<source-field>` (or key) and return `error` type
 func (d *D) CopyX(i int) error {
     d.x = fmt.Sprintf("%d", i)
     return nil
@@ -150,7 +147,7 @@ func (d *D) CopyX(i int) error {
 ```go
     src := []S{{X: 1, U: 2, St: "3"}, {X: 11, U: 22, St: "33"}}
     var dst []D
-    err := deepcopy.Copy(&dst, src)
+    _ = deepcopy.Copy(&dst, src)
 
     for _, d := range dst {
         fmt.Printf("%+v\n", d)
@@ -179,10 +176,7 @@ func (d *D) CopyX(i int) error {
     }
     src := []S{{i: 1, U: 2, St: "3"}, {i: 11, U: 22, St: "33"}}
     var dst []D
-    err := deepcopy.Copy(&dst, src)
-    if err != nil {
-        fmt.Println("error:", err)
-    }
+    _ = deepcopy.Copy(&dst, src)
 
     for _, d := range dst {
         fmt.Printf("%+v\n", d)
@@ -195,7 +189,7 @@ func (d *D) CopyX(i int) error {
 
 ### Configure copying behavior
 
-- Not allow to copy between **ptr** type and **value** (default is allow)
+- Not allow to copy between `ptr` type and `value` (default is `allow`)
 
   [Playground](https://go.dev/play/p/_SGEYYE4N_m)
 
@@ -217,7 +211,7 @@ func (d *D) CopyX(i int) error {
     // error: ErrTypeNonCopyable: int -> *int
 ```
 
-- Ignore error ErrTypeNonCopyable, the copy will not return that error, but the copy won't be performed.
+- Ignore ErrTypeNonCopyable, the process will not return that error, but some copying won't be performed.
   
   [Playground 1](https://go.dev/play/p/u63SwMKNxU5) /
   [Playground 2](https://go.dev/play/p/ZomOQW2PsPP)
@@ -234,10 +228,7 @@ func (d *D) CopyX(i int) error {
     src := []S{{I: []int{1, 2, 3}, U: 2}, {I: []int{1, 2, 3}, U: 22}}
     var dst []D
     // The copy will succeed with ignoring copy of field `I`
-    err := deepcopy.Copy(&dst, src, deepcopy.IgnoreNonCopyableTypes(true))
-    if err != nil {
-        fmt.Println("error:", err)
-    }
+    _ = deepcopy.Copy(&dst, src, deepcopy.IgnoreNonCopyableTypes(true))
 
     for _, d := range dst {
         fmt.Printf("%+v\n", d)
@@ -256,16 +247,16 @@ func (d *D) CopyX(i int) error {
 
 ```
 BenchmarkCopy/Go-DeepCopy
-BenchmarkCopy/Go-DeepCopy-10               664150          1796 ns/op
+BenchmarkCopy/Go-DeepCopy-10         	 1712484	       685.5 ns/op
 
 BenchmarkCopy/ManualCopy
-BenchmarkCopy/ManualCopy-10               3047484           391.4 ns/op
+BenchmarkCopy/ManualCopy-10          	27953836	        41.14 ns/op
 
 BenchmarkCopy/JinzhuCopier
-BenchmarkCopy/JinzhuCopier-10               64623         18541 ns/op
+BenchmarkCopy/JinzhuCopier-10        	  129792	      9177 ns/op
 
 BenchmarkCopy/Deepcopier
-BenchmarkCopy/Deepcopier-10                 38239         31253 ns/op
+BenchmarkCopy/Deepcopier-10          	   42990	     27988 ns/op
 ```
 
 ## Contributing
