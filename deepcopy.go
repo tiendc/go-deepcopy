@@ -46,6 +46,11 @@ func IgnoreNonCopyableTypes(flag bool) Option {
 		ctx.IgnoreNonCopyableTypes = flag
 	}
 }
+func UseGlobalCache(flag bool) Option {
+	return func(ctx *Context) {
+		ctx.UseGlobalCache = flag
+	}
+}
 
 // Copy performs deep copy from `src` to `dst`.
 // `dst` must be a pointer to the output var, `src` can be either value or pointer.

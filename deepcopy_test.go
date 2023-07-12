@@ -199,7 +199,7 @@ var (
 
 func Test_Copy(t *testing.T) {
 	var dst dstStruct1
-	err := Copy(&dst, srcStruct, CopyBetweenPtrAndValue(true), CopyBetweenStructFieldAndMethod(true))
+	err := Copy(&dst, srcStruct)
 	assert.Nil(t, err)
 	// TODO: need verification here
 }
@@ -207,4 +207,28 @@ func Test_Copy(t *testing.T) {
 func Test_ClearCache(t *testing.T) {
 	ClearCache()
 	assert.Equal(t, 0, len(copierCacheMap))
+}
+
+func Test_ConfigOption(t *testing.T) {
+	ctx := defaultContext()
+
+	CopyBetweenPtrAndValue(false)(ctx)
+	assert.Equal(t, false, ctx.CopyBetweenPtrAndValue)
+	CopyBetweenPtrAndValue(true)(ctx)
+	assert.Equal(t, true, ctx.CopyBetweenPtrAndValue)
+
+	CopyBetweenStructFieldAndMethod(false)(ctx)
+	assert.Equal(t, false, ctx.CopyBetweenStructFieldAndMethod)
+	CopyBetweenStructFieldAndMethod(true)(ctx)
+	assert.Equal(t, true, ctx.CopyBetweenStructFieldAndMethod)
+
+	IgnoreNonCopyableTypes(false)(ctx)
+	assert.Equal(t, false, ctx.IgnoreNonCopyableTypes)
+	IgnoreNonCopyableTypes(true)(ctx)
+	assert.Equal(t, true, ctx.IgnoreNonCopyableTypes)
+
+	UseGlobalCache(false)(ctx)
+	assert.Equal(t, false, ctx.UseGlobalCache)
+	UseGlobalCache(true)(ctx)
+	assert.Equal(t, true, ctx.UseGlobalCache)
 }
