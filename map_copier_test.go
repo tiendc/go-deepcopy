@@ -1,6 +1,7 @@
 package deepcopy
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -153,5 +154,27 @@ func Test_Copy_map_error(t *testing.T) {
 		var d []int
 		err := Copy(&d, s)
 		assert.ErrorIs(t, err, ErrTypeNonCopyable)
+	})
+
+	t.Run("#5: key copier returns error", func(t *testing.T) {
+		var s map[int]int = map[int]int{1: 1, 2: 2}
+		var d map[int]int
+		cp := &mapCopier{
+			ctx:       defaultContext(),
+			keyCopier: &mapItemCopier{copier: &errorCopier{}, dstType: reflect.TypeOf(0)},
+		}
+		err := cp.Copy(reflect.ValueOf(&d).Elem(), reflect.ValueOf(s))
+		assert.ErrorIs(t, err, errTest)
+	})
+
+	t.Run("#6: value copier returns error", func(t *testing.T) {
+		var s map[int]int = map[int]int{1: 1, 2: 2}
+		var d map[int]int
+		cp := &mapCopier{
+			ctx:         defaultContext(),
+			valueCopier: &mapItemCopier{copier: &errorCopier{}, dstType: reflect.TypeOf(0)},
+		}
+		err := cp.Copy(reflect.ValueOf(&d).Elem(), reflect.ValueOf(s))
+		assert.ErrorIs(t, err, errTest)
 	})
 }
