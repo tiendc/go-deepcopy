@@ -17,10 +17,10 @@ type Context struct {
 	// CopyBetweenStructFieldAndMethod allow or not copying between struct fields and methods (default is `true`)
 	CopyBetweenStructFieldAndMethod bool
 
-	// IgnoreNonCopyableTypes ignore error ErrTypeNonCopyable (default is `false`)
+	// IgnoreNonCopyableTypes ignore non-copyable types (default is `false`)
 	IgnoreNonCopyableTypes bool
 
-	// UseGlobalCache if false (default is `true`)
+	// UseGlobalCache if false not use global cache (default is `true`)
 	UseGlobalCache bool
 
 	// copierCacheMap cache to speed up parsing types
