@@ -4,10 +4,12 @@ import (
 	"reflect"
 )
 
+// fromIfaceCopier data structure of copier that copies from an interface
 type fromIfaceCopier struct {
 	ctx *Context
 }
 
+// Copy implementation of Copy function for from-iface copier
 func (c *fromIfaceCopier) Copy(dst, src reflect.Value) error {
 	for src.Kind() == reflect.Interface {
 		src = src.Elem()
@@ -23,10 +25,12 @@ func (c *fromIfaceCopier) Copy(dst, src reflect.Value) error {
 	return cp.Copy(dst, src)
 }
 
+// toIfaceCopier data structure of copier that copies to an interface
 type toIfaceCopier struct {
 	ctx *Context
 }
 
+// Copy implementation of Copy function for to-iface copier
 func (c *toIfaceCopier) Copy(dst, src reflect.Value) error {
 	for src.Kind() == reflect.Interface {
 		src = src.Elem()

@@ -6,6 +6,7 @@ import (
 	"sync"
 )
 
+// cacheKey key data structure of cached copiers
 type cacheKey struct {
 	dstType reflect.Type
 	srcType reflect.Type
@@ -45,11 +46,15 @@ var (
 )
 
 const (
-	flagCopyBetweenPtrAndValue          = 1
+	// flagCopyBetweenPtrAndValue indicates copying will be performed between `pointers` and `values`
+	flagCopyBetweenPtrAndValue = 1
+	// flagCopyBetweenStructFieldAndMethod indicates copying will be performed between `struct fields` and `functions`
 	flagCopyBetweenStructFieldAndMethod = 2
-	flagIgnoreNonCopyableTypes          = 3
+	// flagIgnoreNonCopyableTypes indicates copying will skip copying non-copyable types without raising errors
+	flagIgnoreNonCopyableTypes = 3
 )
 
+// prepare prepares context for copiers
 func (ctx *Context) prepare() {
 	if ctx.UseGlobalCache {
 		ctx.copierCacheMap = copierCacheMap
@@ -72,6 +77,7 @@ func (ctx *Context) prepare() {
 	}
 }
 
+// createCacheKey creates and returns  key for caching a copier
 func (ctx *Context) createCacheKey(dstType, srcType reflect.Type) *cacheKey {
 	return &cacheKey{
 		dstType: dstType,
@@ -80,6 +86,7 @@ func (ctx *Context) createCacheKey(dstType, srcType reflect.Type) *cacheKey {
 	}
 }
 
+// defaultContext creates a default context
 func defaultContext() *Context {
 	return &Context{
 		CopyBetweenPtrAndValue:          true,

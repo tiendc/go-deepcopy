@@ -7,9 +7,12 @@ import (
 )
 
 const (
+	// DefaultTagName default tag name for the program to parse input struct tags
+	// to build copier configuration.
 	DefaultTagName = "copy"
 )
 
+// Context copier context
 type Context struct {
 	// CopyBetweenPtrAndValue allow or not copying between pointers and values (default is `true`)
 	CopyBetweenPtrAndValue bool
@@ -29,23 +32,31 @@ type Context struct {
 	flags          uint8
 }
 
+// Option configuration option function provided as extra arguments of copying function
 type Option func(ctx *Context)
 
+// CopyBetweenPtrAndValue config function for setting flag `CopyBetweenPtrAndValue`
 func CopyBetweenPtrAndValue(flag bool) Option {
 	return func(ctx *Context) {
 		ctx.CopyBetweenPtrAndValue = flag
 	}
 }
+
+// CopyBetweenStructFieldAndMethod config function for setting flag `CopyBetweenStructFieldAndMethod`
 func CopyBetweenStructFieldAndMethod(flag bool) Option {
 	return func(ctx *Context) {
 		ctx.CopyBetweenStructFieldAndMethod = flag
 	}
 }
+
+// IgnoreNonCopyableTypes config function for setting flag `IgnoreNonCopyableTypes`
 func IgnoreNonCopyableTypes(flag bool) Option {
 	return func(ctx *Context) {
 		ctx.IgnoreNonCopyableTypes = flag
 	}
 }
+
+// UseGlobalCache config function for setting flag `UseGlobalCache`
 func UseGlobalCache(flag bool) Option {
 	return func(ctx *Context) {
 		ctx.UseGlobalCache = flag
@@ -53,6 +64,7 @@ func UseGlobalCache(flag bool) Option {
 }
 
 // Copy performs deep copy from `src` to `dst`.
+//
 // `dst` must be a pointer to the output var, `src` can be either value or pointer.
 // In case you want to copy unexported struct fields within `src`, `src` must be a pointer.
 func Copy(dst, src any, options ...Option) (err error) {
@@ -98,7 +110,7 @@ func Copy(dst, src any, options ...Option) (err error) {
 	return cp.Copy(dstVal, srcVal)
 }
 
-// ClearCache clears global cache
+// ClearCache clears global cache of previously used copiers
 func ClearCache() {
 	mu.Lock()
 	copierCacheMap = map[cacheKey]copier{}

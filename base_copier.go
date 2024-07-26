@@ -4,22 +4,27 @@ import (
 	"reflect"
 )
 
+// copier base interface defines Copy function
 type copier interface {
 	Copy(dst, src reflect.Value) error
 }
 
+// nopCopier no-op copier
 type nopCopier struct {
 }
 
+// Copy implementation of Copy function for no-op copier
 func (c *nopCopier) Copy(dst, src reflect.Value) error {
 	return nil
 }
 
+// value2PtrCopier data structure of copier that copies from a value to a pointer
 type value2PtrCopier struct {
 	ctx    *Context
 	copier copier
 }
 
+// Copy implementation of Copy function for value-to-pointer copier
 func (c *value2PtrCopier) Copy(dst, src reflect.Value) error {
 	if dst.IsNil() {
 		dst.Set(reflect.New(dst.Type().Elem()))
@@ -33,11 +38,13 @@ func (c *value2PtrCopier) init(dstType, srcType reflect.Type) (err error) {
 	return
 }
 
+// ptr2ValueCopier data structure of copier that copies from a pointer to a value
 type ptr2ValueCopier struct {
 	ctx    *Context
 	copier copier
 }
 
+// Copy implementation of Copy function for pointer-to-value copier
 func (c *ptr2ValueCopier) Copy(dst, src reflect.Value) error {
 	src = src.Elem()
 	if !src.IsValid() {
@@ -52,11 +59,13 @@ func (c *ptr2ValueCopier) init(dstType, srcType reflect.Type) (err error) {
 	return
 }
 
+// ptr2PtrCopier data structure of copier that copies from a pointer to a pointer
 type ptr2PtrCopier struct {
 	ctx    *Context
 	copier copier
 }
 
+// Copy implementation of Copy function for pointer-to-pointer copier
 func (c *ptr2PtrCopier) Copy(dst, src reflect.Value) error {
 	src = src.Elem()
 	if !src.IsValid() {
@@ -75,6 +84,7 @@ func (c *ptr2PtrCopier) init(dstType, srcType reflect.Type) (err error) {
 	return
 }
 
+// directCopier copier that does copying by assigning `src` value to `dst` directly
 type directCopier struct {
 }
 
@@ -83,6 +93,7 @@ func (c *directCopier) Copy(dst, src reflect.Value) error {
 	return nil
 }
 
+// convCopier copier that does copying with converting `src` value to `dst` type
 type convCopier struct {
 }
 

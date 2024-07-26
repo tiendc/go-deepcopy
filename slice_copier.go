@@ -4,11 +4,13 @@ import (
 	"reflect"
 )
 
+// sliceCopier data structure of copier that copies from a `slice`
 type sliceCopier struct {
 	ctx        *Context
 	itemCopier copier
 }
 
+// Copy implementation of Copy function for slice copier
 func (c *sliceCopier) Copy(dst, src reflect.Value) error {
 	srcLen := src.Len()
 	if dst.Kind() == reflect.Slice { // Slice/Array -> Slice
@@ -76,17 +78,22 @@ func (c *sliceCopier) init(dstType, srcType reflect.Type) (err error) {
 	return
 }
 
+// sliceItemDirectCopier copier that copies from a slice item to a destination value directly
 type sliceItemDirectCopier struct {
 }
 
+// Copy implementation of Copy function for slice item copier direct
 func (c *sliceItemDirectCopier) Copy(dst, src reflect.Value) error {
 	dst.Set(src)
 	return nil
 }
 
+// sliceItemConvCopier copier that copies from a slice item to a destination value
+// with converting `src` value to `dst` type
 type sliceItemConvCopier struct {
 }
 
+// Copy implementation of Copy function for slice item copier with-conversion
 func (c *sliceItemConvCopier) Copy(dst, src reflect.Value) error {
 	dst.Set(src.Convert(dst.Type()))
 	return nil
