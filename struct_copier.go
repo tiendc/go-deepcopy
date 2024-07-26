@@ -11,11 +11,13 @@ var (
 	errType = reflect.TypeOf((*error)(nil)).Elem()
 )
 
+// structCopier data structure of copier that copies from a `struct`
 type structCopier struct {
 	ctx          *Context
 	fieldCopiers []copier
 }
 
+// Copy implementation of Copy function for struct copier
 func (c *structCopier) Copy(dst, src reflect.Value) error {
 	for _, cp := range c.fieldCopiers {
 		if err := cp.Copy(dst, src); err != nil {
@@ -201,37 +203,46 @@ func (c *structCopier) createCustomCopier(df, sf *reflect.StructField, cp copier
 	}
 }
 
+// structFieldDirectCopier data structure of copier that copies from
+// a src field to a dst field directly
 type structFieldDirectCopier struct {
 	dstField int
 	srcField int
 }
 
+// Copy implementation of Copy function for struct field copier direct
 func (c *structFieldDirectCopier) Copy(dst, src reflect.Value) error {
 	dst.Field(c.dstField).Set(src.Field(c.srcField))
 	return nil
 }
 
+// structFieldConvCopier data structure of copier that copies from
+// a src field to a dst field with type conversion
 type structFieldConvCopier struct {
 	dstField int
 	srcField int
 }
 
+// Copy implementation of Copy function for struct field copier with type conversion
 func (c *structFieldConvCopier) Copy(dst, src reflect.Value) error {
 	dstVal := dst.Field(c.dstField)
 	dstVal.Set(src.Field(c.srcField).Convert(dstVal.Type()))
 	return nil
 }
 
+// structFieldCopier wrapping copier for copying struct field
 type structFieldCopier struct {
 	copier   copier
 	dstField int
 	srcField int
 }
 
+// Copy implementation of Copy function for struct field copier
 func (c *structFieldCopier) Copy(dst, src reflect.Value) error {
 	return c.copier.Copy(dst.Field(c.dstField), src.Field(c.srcField))
 }
 
+// structFieldMethodCopier data structure of copier that copies between `fields` and `methods`
 type structFieldMethodCopier struct {
 	dstMethod           int
 	dstMethodUnexported bool
@@ -239,6 +250,7 @@ type structFieldMethodCopier struct {
 	srcFieldUnexported  bool
 }
 
+// Copy implementation of Copy function for struct field copier between `fields` and `methods`
 func (c *structFieldMethodCopier) Copy(dst, src reflect.Value) error {
 	src = src.Field(c.srcField)
 	if c.srcFieldUnexported {
@@ -263,6 +275,7 @@ func (c *structFieldMethodCopier) Copy(dst, src reflect.Value) error {
 	return err
 }
 
+// structUnexportedFieldCopier data structure of copier that copies between unexported fields of struct
 type structUnexportedFieldCopier struct {
 	copier             copier
 	dstField           int
@@ -271,6 +284,7 @@ type structUnexportedFieldCopier struct {
 	srcFieldUnexported bool
 }
 
+// Copy implementation of Copy function for struct unexported field copier
 func (c *structUnexportedFieldCopier) Copy(dst, src reflect.Value) error {
 	src = src.Field(c.srcField)
 	if c.srcFieldUnexported {

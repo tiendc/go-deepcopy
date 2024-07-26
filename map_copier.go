@@ -4,12 +4,14 @@ import (
 	"reflect"
 )
 
+// mapCopier data structure of copier that copies from a `map`
 type mapCopier struct {
 	ctx         *Context
 	keyCopier   *mapItemCopier
 	valueCopier *mapItemCopier
 }
 
+// Copy implementation of Copy function for map copier
 func (c *mapCopier) Copy(dst, src reflect.Value) (err error) {
 	if src.IsNil() {
 		dst.Set(reflect.Zero(dst.Type())) // TODO: Go1.18 has no SetZero
@@ -81,11 +83,13 @@ func (c *mapCopier) init(dstType, srcType reflect.Type) error {
 	return nil
 }
 
+// mapItemCopier data structure of copier that copies from a map's key or value
 type mapItemCopier struct {
 	dstType reflect.Type
 	copier  copier
 }
 
+// Copy implementation of Copy function for map item copier
 func (c *mapItemCopier) Copy(src reflect.Value) (reflect.Value, error) {
 	dst := reflect.New(c.dstType).Elem()
 	err := c.copier.Copy(dst, src)

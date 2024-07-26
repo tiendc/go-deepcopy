@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// fieldDetail stores field copying detail parsed from a struct field
 type fieldDetail struct {
 	field    *reflect.StructField
 	key      string
@@ -12,6 +13,7 @@ type fieldDetail struct {
 	required bool
 }
 
+// parseTag parses struct tag for getting copying detail and configuration
 func parseTag(detail *fieldDetail) {
 	tagValue, ok := detail.field.Tag.Lookup(DefaultTagName)
 	detail.key = detail.field.Name
