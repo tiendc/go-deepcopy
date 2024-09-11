@@ -15,7 +15,7 @@ type cacheKey struct {
 
 var (
 	// copierCacheMap global cache for any parsed type
-	copierCacheMap = make(map[cacheKey]copier, 10) // nolint: gomnd
+	copierCacheMap = make(map[cacheKey]copier, 10) //nolint:mnd
 
 	// mu read/write cache lock
 	mu sync.RWMutex
@@ -60,7 +60,7 @@ func (ctx *Context) prepare() {
 		ctx.copierCacheMap = copierCacheMap
 		ctx.mu = &mu
 	} else {
-		ctx.copierCacheMap = make(map[cacheKey]copier, 5) // nolint: gomnd
+		ctx.copierCacheMap = make(map[cacheKey]copier, 5) //nolint:mnd
 		ctx.mu = &sync.RWMutex{}
 	}
 

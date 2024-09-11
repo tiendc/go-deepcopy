@@ -258,11 +258,11 @@ func (c *structFieldMethodCopier) Copy(dst, src reflect.Value) error {
 			return fmt.Errorf("%w: accessing unexported field requires it to be addressable",
 				ErrValueUnaddressable)
 		}
-		src = reflect.NewAt(src.Type(), unsafe.Pointer(src.UnsafeAddr())).Elem()
+		src = reflect.NewAt(src.Type(), unsafe.Pointer(src.UnsafeAddr())).Elem() //nolint:gosec
 	}
 	dst = dst.Addr().Method(c.dstMethod)
 	if c.dstMethodUnexported {
-		dst = reflect.NewAt(dst.Type(), unsafe.Pointer(dst.UnsafeAddr())).Elem()
+		dst = reflect.NewAt(dst.Type(), unsafe.Pointer(dst.UnsafeAddr())).Elem() //nolint:gosec
 	}
 	errVal := dst.Call([]reflect.Value{src})[0]
 	if errVal.IsNil() {
@@ -292,11 +292,11 @@ func (c *structUnexportedFieldCopier) Copy(dst, src reflect.Value) error {
 			return fmt.Errorf("%w: accessing unexported field requires it to be addressable",
 				ErrValueUnaddressable)
 		}
-		src = reflect.NewAt(src.Type(), unsafe.Pointer(src.UnsafeAddr())).Elem()
+		src = reflect.NewAt(src.Type(), unsafe.Pointer(src.UnsafeAddr())).Elem() //nolint:gosec
 	}
 	dst = dst.Field(c.dstField)
 	if c.dstFieldUnexported {
-		dst = reflect.NewAt(dst.Type(), unsafe.Pointer(dst.UnsafeAddr())).Elem()
+		dst = reflect.NewAt(dst.Type(), unsafe.Pointer(dst.UnsafeAddr())).Elem() //nolint:gosec
 	}
 	return c.copier.Copy(dst, src)
 }
