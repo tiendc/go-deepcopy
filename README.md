@@ -263,10 +263,6 @@ BenchmarkCopy/Deepcopier-10          	   42990	     27988 ns/op
 
 - You are welcome to make pull requests for new functions and bug fixes.
 
-## Authors
-
-- Dao Cong Tien ([tiendc](https://github.com/tiendc))
-
 ## License
 
 - [MIT License](LICENSE)

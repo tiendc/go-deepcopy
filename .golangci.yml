@@ -11,14 +11,6 @@ linters-settings:
     min-complexity: 20
   goimports:
     local-prefixes: github.com/golangci/golangci-lint
-  gomnd:
-    settings:
-      mnd:
-        checks: # don't include the "operation" and "assign"
-          - argument
-          - case
-          - condition
-          - return
   lll:
     line-length: 120
   misspell:
@@ -33,7 +25,7 @@ linters:
     - errname
     - errorlint
     - exhaustive
-    - exportloopref
+    - copyloopvar
     - forbidigo
     - forcetypeassert
     - funlen
@@ -42,10 +34,10 @@ linters:
     - goconst
     - gocritic
     - gocyclo
-    - goerr113
+    - err113
     - gofmt
     - goimports
-    - gomnd
+    - mnd
     - gosec
     - gosimple
     - govet
@@ -73,19 +65,9 @@ issues:
         - staticcheck
         - gocyclo
         - gocognit
-        - goerr113
+        - err113
         - forcetypeassert
         - wrapcheck
         - gomnd
         - errorlint
         - unused
-
-run:
-  skip-dirs:
-    - scripts
-    - test-results
-
-# golangci configuration
-# https://github.com/golangci/golangci/wiki/Configuration
-service:
-  golangci-lint-version: 1.50.x

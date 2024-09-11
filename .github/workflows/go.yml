@@ -1,4 +1,4 @@
-name: Go
+name: Tests
 
 on:
   push:
@@ -13,22 +13,22 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ["1.18.x", "1.21.x"]
+        go: ["1.18.x", "1.22.x", "1.23.x"]
         include:
-          - go: 1.21.x
+          - go: 1.23.x
             latest: true
 
     steps:
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go }}
 
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Load cached dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
@@ -45,4 +45,6 @@ jobs:
         run: make cover
 
       - name: Upload coverage to codecov.io
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
