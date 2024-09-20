@@ -179,7 +179,7 @@ type D struct {
     St string
 }
 
-// You want to copy `S.SBase.St` to `D`
+// You want to copy `S.SBase.St` to `D.St`
 func (d *D) CopySBase(sb SBase) error {
     d.St = sb.St
     return nil
