@@ -24,6 +24,7 @@ go get github.com/tiendc/go-deepcopy
 - [Copy between struct fields with different names](#copy-between-struct-fields-with-different-names)
 - [Ignore copying struct fields](#ignore-copying-struct-fields)
 - [Copy between struct fields and methods](#copy-between-struct-fields-and-methods)
+- [Copy from source having embedded structs](#copy-from-source-having-embedded-structs)
 - [Copy between unexported struct fields](#copy-between-unexported-struct-fields)
 - [Configure copying behavior](#configure-copying-behavior)
 
@@ -156,6 +157,46 @@ func (d *D) CopyX(i int) error {
     // Output:
     // {x:1 U:2}
     // {x:11 U:22}
+```
+
+### Copy from source having embedded structs
+
+  [Playground 1](https://go.dev/play/p/e7nvdqqZ6MF) /
+  [Playground 2](https://go.dev/play/p/UF8ppU5kD7v)
+
+```go
+// Source struct has embedded struct
+type SBase struct {
+    St string
+}
+type S struct {
+    SBase
+    I int
+}
+// but destination struct doesn't
+type D struct {
+    I  int
+    St string
+}
+
+// You want to copy `S.SBase.St` to `D.St`
+func (d *D) CopySBase(sb SBase) error {
+    d.St = sb.St
+    return nil
+}
+```
+```go
+    src := []S{{I: 1, SBase: SBase{"abc"}}, {I: 11, SBase: SBase{"xyz"}}}
+    var dst []D
+    _ = deepcopy.Copy(&dst, src)
+
+    for _, d := range dst {
+        fmt.Printf("%+v\n", d)
+    }
+
+    // Output:
+    // {I:1 St:abc}
+    // {I:11 St:xyz}
 ```
 
 ### Copy between unexported struct fields
