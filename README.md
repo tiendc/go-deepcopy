@@ -162,7 +162,8 @@ func (d *D) CopyX(i int) error {
 ### Copy from source having embedded structs
 
   [Playground 1](https://go.dev/play/p/e7nvdqqZ6MF) /
-  [Playground 2](https://go.dev/play/p/UF8ppU5kD7v)
+  [Playground 2](https://go.dev/play/p/UF8ppU5kD7v) /
+  [Playground 3](https://go.dev/play/p/YrCwKkHvyIe)
 
 ```go
 // Source struct has embedded struct
@@ -181,6 +182,7 @@ type D struct {
 
 // You want to copy `S.SBase.St` to `D.St`
 func (d *D) CopySBase(sb SBase) error {
+    // you can even call deepcopy.Copy(d, sb) if SBase has many fields
     d.St = sb.St
     return nil
 }
