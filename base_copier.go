@@ -48,7 +48,7 @@ type ptr2ValueCopier struct {
 func (c *ptr2ValueCopier) Copy(dst, src reflect.Value) error {
 	src = src.Elem()
 	if !src.IsValid() {
-		dst.Set(reflect.Zero(dst.Type())) // TODO: Go1.18 has no SetZero
+		dst.Set(reflect.Zero(dst.Type())) // NOTE: Go1.18 has no SetZero
 		return nil
 	}
 	return c.copier.Copy(dst, src)
@@ -69,7 +69,7 @@ type ptr2PtrCopier struct {
 func (c *ptr2PtrCopier) Copy(dst, src reflect.Value) error {
 	src = src.Elem()
 	if !src.IsValid() {
-		dst.Set(reflect.Zero(dst.Type())) // TODO: Go1.18 has no SetZero
+		dst.Set(reflect.Zero(dst.Type())) // NOTE: Go1.18 has no SetZero
 		return nil
 	}
 	if dst.IsNil() {

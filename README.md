@@ -24,7 +24,7 @@ go get github.com/tiendc/go-deepcopy
 - [Copy between struct fields with different names](#copy-between-struct-fields-with-different-names)
 - [Ignore copying struct fields](#ignore-copying-struct-fields)
 - [Copy between struct fields and methods](#copy-between-struct-fields-and-methods)
-- [Copy from source having embedded structs](#copy-from-source-having-embedded-structs)
+- [Copy between inherited fields from embedded structs](#copy-between-inherited-fields-from-embedded-structs)
 - [Copy between unexported struct fields](#copy-between-unexported-struct-fields)
 - [Configure copying behavior](#configure-copying-behavior)
 
@@ -124,6 +124,8 @@ go get github.com/tiendc/go-deepcopy
 
 ### Copy between struct fields and methods
 
+- **Note**: If a copying method is defined in a struct, it will have higher priority than matching field.
+
   [Playground 1](https://go.dev/play/p/zb2NU32G2mG) /
   [Playground 2](https://go.dev/play/p/C3FpFwzoPFm)
 
@@ -159,35 +161,26 @@ func (d *D) CopyX(i int) error {
     // {x:11 U:22}
 ```
 
-### Copy from source having embedded structs
+### Copy between inherited fields from embedded structs
 
-  [Playground 1](https://go.dev/play/p/e7nvdqqZ6MF) /
-  [Playground 2](https://go.dev/play/p/UF8ppU5kD7v) /
-  [Playground 3](https://go.dev/play/p/YrCwKkHvyIe)
+- This is default behaviour from version 1.0, for lower versions, you can use custom copying function
+to achieve the same result.
 
 ```go
-// Source struct has embedded struct
-type SBase struct {
-    St string
-}
-type S struct {
-    SBase
-    I int
-}
-// but destination struct doesn't
-type D struct {
-    I  int
-    St string
-}
+    type SBase struct {
+        St string
+    }
+    // Source struct has embedded struct
+    type S struct {
+        SBase
+        I int
+    }
+    // but destination struct doesn't
+    type D struct {
+        I  int
+        St string
+    }
 
-// You want to copy `S.SBase.St` to `D.St`
-func (d *D) CopySBase(sb SBase) error {
-    // you can even call deepcopy.Copy(d, sb) if SBase has many fields
-    d.St = sb.St
-    return nil
-}
-```
-```go
     src := []S{{I: 1, SBase: SBase{"abc"}}, {I: 11, SBase: SBase{"xyz"}}}
     var dst []D
     _ = deepcopy.Copy(&dst, src)

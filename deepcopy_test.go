@@ -182,7 +182,7 @@ var (
 		M1: map[int]string{1: "11", 2: "22", 3: "33"},
 		M2: nil,
 		M3: map[int]int{7: 77, 8: 88, 9: 99},
-		// nolint: gofmt
+		//nolint:gofmt
 		M4: map[[3]int]*srcStruct2{
 			[3]int{1, 1, 1}: &srcStructA,
 			[3]int{2, 2, 2}: &srcStructB,

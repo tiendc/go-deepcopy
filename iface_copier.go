@@ -14,7 +14,7 @@ func (c *fromIfaceCopier) Copy(dst, src reflect.Value) error {
 	for src.Kind() == reflect.Interface {
 		src = src.Elem()
 		if !src.IsValid() {
-			dst.Set(reflect.Zero(dst.Type())) // TODO: Go1.18 has no SetZero
+			dst.Set(reflect.Zero(dst.Type())) // NOTE: Go1.18 has no SetZero
 			return nil
 		}
 	}
@@ -35,7 +35,7 @@ func (c *toIfaceCopier) Copy(dst, src reflect.Value) error {
 	for src.Kind() == reflect.Interface {
 		src = src.Elem()
 		if !src.IsValid() {
-			dst.Set(reflect.Zero(dst.Type())) // TODO: Go1.18 has no SetZero
+			dst.Set(reflect.Zero(dst.Type())) // NOTE: Go1.18 has no SetZero
 			return nil
 		}
 	}
