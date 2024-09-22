@@ -404,6 +404,9 @@ func (d *testD1) CopyI5(i5 int) string { // incorrect method prototype (not retu
 func (d *testD1) CopyI6(i6 int) error { // incorrect method prototype (unmatched input type)
 	return errTest
 }
+func (d *testD1) NotCopy(i6 int) error { // not a copying method
+	return errTest
+}
 
 func Test_Copy_struct_method(t *testing.T) {
 	t.Run("#1: field -> dst method", func(t *testing.T) {
@@ -457,6 +460,38 @@ func Test_Copy_struct_method(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, testD1{U: 2}, d)
 	})
+
+	t.Run("#5: copy from src embedded field", func(t *testing.T) {
+		type SBase struct {
+			I1 int
+		}
+		type SS struct {
+			SBase
+			U uint
+		}
+
+		var s SS = SS{U: 2, SBase: SBase{I1: 123}}
+		var d testD1
+		err := Copy(&d, s)
+		assert.Nil(t, err)
+		assert.Equal(t, testD1{U: 2, x1: 246}, d)
+	})
+
+	t.Run("#6: copy from src embedded field, but field value can't be retrieved due to nil ptr", func(t *testing.T) {
+		type SBase struct {
+			I1 int
+		}
+		type SS struct {
+			*SBase
+			U uint
+		}
+
+		var s SS = SS{U: 2}
+		var d testD1
+		err := Copy(&d, s)
+		assert.Nil(t, err)
+		assert.Equal(t, testD1{U: 2}, d)
+	})
 }
 
 func Test_Copy_struct_method_error(t *testing.T) {
@@ -505,7 +540,7 @@ func Test_Copy_struct_method_error(t *testing.T) {
 		var s SS = SS{I4: 1, U: 2}
 		var d testD1
 		err := Copy(&d, s)
-		assert.ErrorIs(t, err, ErrFieldRequireCopying)
+		assert.ErrorIs(t, err, ErrMethodInvalid)
 	})
 
 	t.Run("#5: incorrect method prototype (CopyI5())", func(t *testing.T) {
@@ -530,5 +565,266 @@ func Test_Copy_struct_method_error(t *testing.T) {
 		var d testD1
 		err := Copy(&d, s)
 		assert.ErrorIs(t, err, errTest)
+	})
+}
+
+func Test_Copy_struct_with_embedded_struct(t *testing.T) {
+	type SBase1 struct {
+		I int
+	}
+	type SBase2 struct {
+		SBase1
+		S string
+	}
+
+	type DBase1 struct {
+		I int
+	}
+	type DBase2 struct {
+		DBase1
+		S string
+	}
+
+	t.Run("#1: both src and dst have equivalent embedded fields", func(t *testing.T) {
+		type SS struct {
+			SBase2
+			U uint `copy:",required"`
+		}
+		type DD struct {
+			DBase2
+			U uint `copy:",required"`
+		}
+
+		s := SS{U: 100, SBase2: SBase2{S: "abc", SBase1: SBase1{I: 11}}}
+		d := DD{}
+		err := Copy(&d, s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD{U: 100, DBase2: DBase2{S: "abc", DBase1: DBase1{I: 11}}}, d)
+
+		// With some tags
+		type SS2 struct {
+			SBase2 `copy:"base,required"`
+			U      uint `copy:",required"`
+		}
+		type DD2 struct {
+			DBase2 `copy:"base,required"`
+			U      uint `copy:",required"`
+		}
+
+		s2 := SS2{U: 100, SBase2: SBase2{S: "abc", SBase1: SBase1{I: 11}}}
+		d2 := DD2{}
+		err = Copy(&d2, s2)
+		assert.Nil(t, err)
+		assert.Equal(t, DD2{U: 100, DBase2: DBase2{S: "abc", DBase1: DBase1{I: 11}}}, d2)
+	})
+
+	t.Run("#2: both src and dst have same embedded struct", func(t *testing.T) {
+		type SS struct {
+			SBase2
+			U uint `copy:",required"`
+		}
+		type DD struct {
+			SBase2
+			U uint `copy:",required"`
+		}
+
+		s := SS{U: 100, SBase2: SBase2{S: "abc", SBase1: SBase1{I: 11}}}
+		d := DD{U: 123, SBase2: SBase2{S: "xyz", SBase1: SBase1{I: 111}}}
+		err := Copy(&d, s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD{U: 100, SBase2: SBase2{S: "abc", SBase1: SBase1{I: 11}}}, d)
+	})
+
+	t.Run("#3: both src and dst have equivalent embedded fields, but src embeds ptr of struct", func(t *testing.T) {
+		type SS struct {
+			*SBase2
+			U uint `copy:",required"`
+		}
+		type DD struct {
+			DBase2
+			U uint `copy:",required"`
+		}
+
+		// Ptr has value set
+		s := SS{U: 100, SBase2: &SBase2{S: "abc", SBase1: SBase1{I: 11}}}
+		d := DD{}
+		err := Copy(&d, s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD{U: 100, DBase2: DBase2{S: "abc", DBase1: DBase1{I: 11}}}, d)
+
+		// Ptr is nil
+		s = SS{U: 100}
+		d = DD{}
+		err = Copy(&d, &s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD{U: 100}, d)
+	})
+
+	t.Run("#4: both src and dst have equivalent embedded fields, but dst embeds ptr of struct", func(t *testing.T) {
+		type SS struct {
+			SBase2
+			U uint
+		}
+		type DD struct {
+			*DBase2
+			U uint
+		}
+
+		s := SS{U: 100, SBase2: SBase2{S: "abc", SBase1: SBase1{I: 11}}}
+		d := DD{}
+		err := Copy(&d, s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD{U: 100, DBase2: &DBase2{S: "abc", DBase1: DBase1{I: 11}}}, d)
+	})
+
+	t.Run("#5: src has embedded struct, dst doesn't (flattening the copy)", func(t *testing.T) {
+		type SS struct {
+			SBase2
+			U uint
+		}
+		type DD struct {
+			I int    `copy:",required"`
+			S string `copy:",required"`
+			U uint   `copy:",required"`
+		}
+
+		s := SS{U: 100, SBase2: SBase2{S: "abc", SBase1: SBase1{I: 11}}}
+		d := DD{S: "xyz"}
+		err := Copy(&d, s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD{U: 100, S: "abc", I: 11}, d)
+
+		// With ignoring a field
+		type DD2 struct {
+			I int    `copy:",required"`
+			S string `copy:"-"`
+			U uint   `copy:",required"`
+		}
+
+		d2 := DD2{}
+		err = Copy(&d2, s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD2{U: 100, I: 11}, d2)
+	})
+
+	t.Run("#6: src has embedded struct ptr, dst doesn't (flattening the copy)", func(t *testing.T) {
+		type SS struct {
+			*SBase2
+			U uint
+		}
+		type DD struct {
+			I int    `copy:",required"`
+			S string `copy:",required"`
+			U uint   `copy:",required"`
+		}
+
+		// Ptr has a value set
+		s := SS{U: 100, SBase2: &SBase2{S: "abc", SBase1: SBase1{I: 11}}}
+		d := DD{S: "xyz"}
+		err := Copy(&d, s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD{U: 100, S: "abc", I: 11}, d)
+
+		// Ptr is nil
+		s = SS{U: 100}
+		d = DD{S: "xyz"}
+		err = Copy(&d, s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD{U: 100}, d)
+
+		// With ignoring a field
+		type DD2 struct {
+			I int    `copy:",required"`
+			S string `copy:"-"`
+			U uint   `copy:",required"`
+		}
+
+		s = SS{U: 100, SBase2: &SBase2{S: "abc", SBase1: SBase1{I: 11}}}
+		d2 := DD2{S: "xyz"}
+		err = Copy(&d2, s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD2{U: 100, S: "xyz", I: 11}, d2)
+	})
+
+	t.Run("#7: dst has embedded struct, src doesn't (flattening the copy)", func(t *testing.T) {
+		type SS struct {
+			I int    `copy:",required"`
+			S string `copy:",required"`
+			U uint   `copy:",required"`
+		}
+		type DD struct {
+			DBase2
+			U uint
+		}
+
+		s := SS{U: 100, S: "abc", I: 11}
+		d := DD{U: 123, DBase2: DBase2{S: "xyz"}}
+		err := Copy(&d, s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD{U: 100, DBase2: DBase2{S: "abc", DBase1: DBase1{I: 11}}}, d)
+	})
+
+	t.Run("#8: dst has embedded struct ptr, src doesn't (flattening the copy)", func(t *testing.T) {
+		type SS struct {
+			I int    `copy:",required"`
+			S string `copy:",required"`
+			U uint   `copy:",required"`
+		}
+		type DD struct {
+			*DBase2
+			U uint
+		}
+
+		// Ptr has value set
+		s := SS{U: 100, S: "abc", I: 11}
+		d := DD{U: 123, DBase2: &DBase2{S: "xyz"}}
+		err := Copy(&d, s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD{U: 100, DBase2: &DBase2{S: "abc", DBase1: DBase1{I: 11}}}, d)
+
+		// Ptr is nil initially
+		s = SS{U: 100, S: "abc", I: 11}
+		d = DD{U: 123}
+		err = Copy(&d, s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD{U: 100, DBase2: &DBase2{S: "abc", DBase1: DBase1{I: 11}}}, d)
+	})
+}
+
+func Test_Copy_struct_with_embedded_struct_error(t *testing.T) {
+	t.Run("#1: src inherited field requires copying", func(t *testing.T) {
+		type SBase struct {
+			I int `copy:",required"`
+		}
+		type SS struct {
+			SBase
+			U uint
+		}
+		type DD struct {
+			U uint
+		}
+
+		s := SS{U: 100, SBase: SBase{I: 11}}
+		d := DD{}
+		err := Copy(&d, s)
+		assert.ErrorIs(t, err, ErrFieldRequireCopying)
+	})
+
+	t.Run("#2: dst inherited field requires copying", func(t *testing.T) {
+		type SS struct {
+			U uint
+		}
+		type DBase struct {
+			I int `copy:",required"`
+		}
+		type DD struct {
+			DBase
+			U uint
+		}
+
+		s := SS{U: 100}
+		d := DD{}
+		err := Copy(&d, s)
+		assert.ErrorIs(t, err, ErrFieldRequireCopying)
 	})
 }
