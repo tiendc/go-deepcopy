@@ -3,13 +3,18 @@ package deepcopy
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"sync"
 )
 
 const (
-	// DefaultTagName default tag name for the program to parse input struct tags
-	// to build copier configuration.
 	DefaultTagName = "copy"
+)
+
+var (
+	// defaultTagName default tag name for the program to parse input struct tags
+	// to build copier configuration.
+	defaultTagName = DefaultTagName
 )
 
 // Context copier context
@@ -115,4 +120,13 @@ func ClearCache() {
 	mu.Lock()
 	copierCacheMap = map[cacheKey]copier{}
 	mu.Unlock()
+}
+
+// SetDefaultTagName overwrites the default tag name.
+// This function should only be called once at program startup.
+func SetDefaultTagName(tag string) {
+	tagName := strings.TrimSpace(tag)
+	if tagName != "" && tagName == tag {
+		defaultTagName = tagName
+	}
 }
