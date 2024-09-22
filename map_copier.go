@@ -14,7 +14,7 @@ type mapCopier struct {
 // Copy implementation of Copy function for map copier
 func (c *mapCopier) Copy(dst, src reflect.Value) (err error) {
 	if src.IsNil() {
-		dst.Set(reflect.Zero(dst.Type())) // TODO: Go1.18 has no SetZero
+		dst.Set(reflect.Zero(dst.Type())) // NOTE: Go1.18 has no SetZero
 		return nil
 	}
 	if dst.IsNil() {

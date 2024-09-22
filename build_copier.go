@@ -96,7 +96,8 @@ func defaultContext() *Context {
 }
 
 // buildCopier build copier for handling copy from `srcType` to `dstType`
-// nolint: gocognit, gocyclo
+//
+//nolint:gocognit,gocyclo
 func buildCopier(ctx *Context, dstType, srcType reflect.Type) (copier, error) {
 	dstKind, srcKind := dstType.Kind(), srcType.Kind()
 	if dstKind == reflect.Interface {
@@ -106,7 +107,7 @@ func buildCopier(ctx *Context, dstType, srcType reflect.Type) (copier, error) {
 		return &fromIfaceCopier{ctx: ctx}, nil
 	}
 
-	// nolint: nestif
+	//nolint:nestif
 	if srcKind == reflect.Pointer {
 		if dstKind == reflect.Pointer { // ptr -> ptr
 			copier := &ptr2PtrCopier{ctx: ctx}

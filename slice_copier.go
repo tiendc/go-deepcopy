@@ -16,7 +16,7 @@ func (c *sliceCopier) Copy(dst, src reflect.Value) error {
 	if dst.Kind() == reflect.Slice { // Slice/Array -> Slice
 		// `src` is nil slice, set `dst` nil
 		if src.Kind() == reflect.Slice && src.IsNil() {
-			dst.Set(reflect.Zero(dst.Type())) // TODO: Go1.18 has no SetZero
+			dst.Set(reflect.Zero(dst.Type())) // NOTE: Go1.18 has no SetZero
 			return nil
 		}
 		newSlice := reflect.MakeSlice(dst.Type(), srcLen, srcLen)
@@ -42,7 +42,7 @@ func (c *sliceCopier) Copy(dst, src reflect.Value) error {
 	}
 	for ; i < dstLen; i++ {
 		item := dst.Index(i)
-		item.Set(reflect.Zero(item.Type())) // TODO: Go1.18 has no SetZero
+		item.Set(reflect.Zero(item.Type())) // NOTE: Go1.18 has no SetZero
 	}
 	return nil
 }
@@ -54,11 +54,11 @@ func (c *sliceCopier) init(dstType, srcType reflect.Type) (err error) {
 	// OPTIMIZATION: buildCopier() can handle this nicely, but it will add another wrapping layer
 	if simpleKindMask&(1<<srcKind) > 0 {
 		if srcType == dstType {
-			c.itemCopier = &sliceItemDirectCopier{}
+			c.itemCopier = &directCopier{}
 			return nil
 		}
 		if srcType.ConvertibleTo(dstType) {
-			c.itemCopier = &sliceItemConvCopier{}
+			c.itemCopier = &convCopier{}
 			return nil
 		}
 	}
@@ -76,25 +76,4 @@ func (c *sliceCopier) init(dstType, srcType reflect.Type) (err error) {
 
 	c.itemCopier, err = buildCopier(c.ctx, dstType, srcType)
 	return
-}
-
-// sliceItemDirectCopier copier that copies from a slice item to a destination value directly
-type sliceItemDirectCopier struct {
-}
-
-// Copy implementation of Copy function for slice item copier direct
-func (c *sliceItemDirectCopier) Copy(dst, src reflect.Value) error {
-	dst.Set(src)
-	return nil
-}
-
-// sliceItemConvCopier copier that copies from a slice item to a destination value
-// with converting `src` value to `dst` type
-type sliceItemConvCopier struct {
-}
-
-// Copy implementation of Copy function for slice item copier with-conversion
-func (c *sliceItemConvCopier) Copy(dst, src reflect.Value) error {
-	dst.Set(src.Convert(dst.Type()))
-	return nil
 }
