@@ -18,4 +18,6 @@ var (
 	// ErrFieldRequireCopying returned when a field is required to be copied
 	// but no copying is done for it.
 	ErrFieldRequireCopying = errors.New("ErrFieldRequireCopying")
+	// ErrMethodInvalid returned when copying method of a struct is not valid
+	ErrMethodInvalid = errors.New("ErrMethodInvalid")
 )

@@ -11,6 +11,18 @@ type fieldDetail struct {
 	key      string
 	ignored  bool
 	required bool
+
+	done         bool
+	index        []int
+	nestedFields []*fieldDetail
+}
+
+// markDone sets the `done` flag of a field detail and all of its nested fields recursively
+func (detail *fieldDetail) markDone() {
+	detail.done = true
+	for _, f := range detail.nestedFields {
+		f.markDone()
+	}
 }
 
 // parseTag parses struct tag for getting copying detail and configuration
@@ -30,7 +42,7 @@ func parseTag(detail *fieldDetail) {
 	}
 
 	for _, tagOpt := range tags[1:] {
-		if tagOpt == "required" {
+		if tagOpt == "required" && !detail.ignored {
 			detail.required = true
 		}
 	}
