@@ -30,7 +30,7 @@ go get github.com/tiendc/go-deepcopy
 
 ### First example
 
-[Playground](https://go.dev/play/p/GsgjDl1vxVd)
+  [Playground](https://go.dev/play/p/CrP_rZlkNzm)
 
 ```go
     type SS struct {
@@ -53,7 +53,7 @@ go get github.com/tiendc/go-deepcopy
     }
     src := []S{{I: 1, U: 2, St: "3", V: SS{B: true}}, {I: 11, U: 22, St: "33", V: SS{B: false}}}
     var dst []D
-    _ = deepcopy.Copy(&dst, src)
+    _ = deepcopy.Copy(&dst, &src)
 
     for _, d := range dst {
         fmt.Printf("%+v\n", d)
@@ -66,7 +66,7 @@ go get github.com/tiendc/go-deepcopy
 
 ### Copy between struct fields with different names
 
-[Playground](https://go.dev/play/p/MY8ReuT2K3Y)
+  [Playground](https://go.dev/play/p/WchsGRns0O-)
 
 ```go
     type S struct {
@@ -80,7 +80,7 @@ go get github.com/tiendc/go-deepcopy
     }
     src := []S{{X: 1, U: 2, St: "3"}, {X: 11, U: 22, St: "33"}}
     var dst []D
-    _ = deepcopy.Copy(&dst, src)
+    _ = deepcopy.Copy(&dst, &src)
 
     for _, d := range dst {
         fmt.Printf("%+v\n", d)
@@ -95,7 +95,7 @@ go get github.com/tiendc/go-deepcopy
 
 - By default, matching fields will be copied. If you don't want to copy a field, use tag `-`.
 
-  [Playground](https://go.dev/play/p/RtlmWN1AEsy)
+  [Playground](https://go.dev/play/p/8KPe1Susjp1)
 
 ```go
     // S and D both have `I` field, but we don't want to copy it
@@ -111,7 +111,7 @@ go get github.com/tiendc/go-deepcopy
     }
     src := []S{{I: 1, U: 2, St: "3"}, {I: 11, U: 22, St: "33"}}
     var dst []D
-    _ = deepcopy.Copy(&dst, src)
+    _ = deepcopy.Copy(&dst, &src)
 
     for _, d := range dst {
         fmt.Printf("%+v\n", d)
@@ -126,8 +126,8 @@ go get github.com/tiendc/go-deepcopy
 
 - **Note**: If a copying method is defined in a struct, it will have higher priority than matching field.
 
-  [Playground 1](https://go.dev/play/p/zb2NU32G2mG) /
-  [Playground 2](https://go.dev/play/p/C3FpFwzoPFm)
+  [Playground 1](https://go.dev/play/p/rCawGa5AZh3) /
+  [Playground 2](https://go.dev/play/p/vDOhHXyUoyD)
 
 ```go
 type S struct {
@@ -150,7 +150,7 @@ func (d *D) CopyX(i int) error {
 ```go
     src := []S{{X: 1, U: 2, St: "3"}, {X: 11, U: 22, St: "33"}}
     var dst []D
-    _ = deepcopy.Copy(&dst, src)
+    _ = deepcopy.Copy(&dst, &src)
 
     for _, d := range dst {
         fmt.Printf("%+v\n", d)
@@ -165,6 +165,9 @@ func (d *D) CopyX(i int) error {
 
 - This is default behaviour from version 1.0, for lower versions, you can use custom copying function
 to achieve the same result.
+
+  [Playground 1](https://go.dev/play/p/Zjj12AMRYXt) \
+  [Playground 2](https://go.dev/play/p/cJGLqpPVHXI)
 
 ```go
     type SBase struct {
@@ -183,7 +186,7 @@ to achieve the same result.
 
     src := []S{{I: 1, SBase: SBase{"abc"}}, {I: 11, SBase: SBase{"xyz"}}}
     var dst []D
-    _ = deepcopy.Copy(&dst, src)
+    _ = deepcopy.Copy(&dst, &src)
 
     for _, d := range dst {
         fmt.Printf("%+v\n", d)
@@ -198,7 +201,7 @@ to achieve the same result.
 
 - By default, unexported struct fields will be ignored when copy. If you want to copy them, use tag `required`.
 
-  [Playground](https://go.dev/play/p/9fNq7kwM1y8)
+  [Playground](https://go.dev/play/p/HYWFbnafdfr)
 
 ```go
     type S struct {
@@ -212,7 +215,7 @@ to achieve the same result.
     }
     src := []S{{i: 1, U: 2, St: "3"}, {i: 11, U: 22, St: "33"}}
     var dst []D
-    _ = deepcopy.Copy(&dst, src)
+    _ = deepcopy.Copy(&dst, &src)
 
     for _, d := range dst {
         fmt.Printf("%+v\n", d)
@@ -227,7 +230,7 @@ to achieve the same result.
 
 - Not allow to copy between `ptr` type and `value` (default is `allow`)
 
-  [Playground](https://go.dev/play/p/_SGEYYE4N_m)
+  [Playground](https://go.dev/play/p/ZYzGaCNwp2i)
 
 ```go
     type S struct {
@@ -240,7 +243,7 @@ to achieve the same result.
     }
     src := []S{{I: 1, U: 2}, {I: 11, U: 22}}
     var dst []D
-    err := deepcopy.Copy(&dst, src, deepcopy.CopyBetweenPtrAndValue(false))
+    err := deepcopy.Copy(&dst, &src, deepcopy.CopyBetweenPtrAndValue(false))
     fmt.Println("error:", err)
 
     // Output:
@@ -249,8 +252,8 @@ to achieve the same result.
 
 - Ignore ErrTypeNonCopyable, the process will not return that error, but some copying won't be performed.
   
-  [Playground 1](https://go.dev/play/p/u63SwMKNxU5) /
-  [Playground 2](https://go.dev/play/p/ZomOQW2PsPP)
+  [Playground 1](https://go.dev/play/p/YPz49D_oiTY) /
+  [Playground 2](https://go.dev/play/p/DNrBJUP-rrM)
 
 ```go
     type S struct {
@@ -264,7 +267,7 @@ to achieve the same result.
     src := []S{{I: []int{1, 2, 3}, U: 2}, {I: []int{1, 2, 3}, U: 22}}
     var dst []D
     // The copy will succeed with ignoring copy of field `I`
-    _ = deepcopy.Copy(&dst, src, deepcopy.IgnoreNonCopyableTypes(true))
+    _ = deepcopy.Copy(&dst, &src, deepcopy.IgnoreNonCopyableTypes(true))
 
     for _, d := range dst {
         fmt.Printf("%+v\n", d)
@@ -279,20 +282,22 @@ to achieve the same result.
 
 ### Go-DeepCopy vs ManualCopy vs JinzhuCopier vs Deepcopier
 
-[Benchmark code](https://gist.github.com/tiendc/0a739fd880b9aac5373de95458d54808)
+This is the benchmark result on the latest version of the lib.
+
+  [Benchmark code](https://gist.github.com/tiendc/0a739fd880b9aac5373de95458d54808)
 
 ```
 BenchmarkCopy/Go-DeepCopy
-BenchmarkCopy/Go-DeepCopy-10         	 1712484	       685.5 ns/op
+BenchmarkCopy/Go-DeepCopy-10         	 1753189	       686.7 ns/op
 
 BenchmarkCopy/ManualCopy
-BenchmarkCopy/ManualCopy-10          	27953836	        41.14 ns/op
+BenchmarkCopy/ManualCopy-10          	29309067	        40.64 ns/op
 
 BenchmarkCopy/JinzhuCopier
-BenchmarkCopy/JinzhuCopier-10        	  129792	      9177 ns/op
+BenchmarkCopy/JinzhuCopier-10        	  135361	      8873 ns/op
 
 BenchmarkCopy/Deepcopier
-BenchmarkCopy/Deepcopier-10          	   42990	     27988 ns/op
+BenchmarkCopy/Deepcopier-10          	   40412	     31290 ns/op
 ```
 
 ## Contributing
