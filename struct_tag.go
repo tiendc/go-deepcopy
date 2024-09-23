@@ -27,7 +27,7 @@ func (detail *fieldDetail) markDone() {
 
 // parseTag parses struct tag for getting copying detail and configuration
 func parseTag(detail *fieldDetail) {
-	tagValue, ok := detail.field.Tag.Lookup(DefaultTagName)
+	tagValue, ok := detail.field.Tag.Lookup(defaultTagName)
 	detail.key = detail.field.Name
 	if !ok {
 		return

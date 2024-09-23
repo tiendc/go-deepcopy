@@ -232,3 +232,15 @@ func Test_ConfigOption(t *testing.T) {
 	UseGlobalCache(true)(ctx)
 	assert.Equal(t, true, ctx.UseGlobalCache)
 }
+
+func Test_SetDefaultTagName(t *testing.T) {
+	assert.Equal(t, DefaultTagName, defaultTagName)
+	// Invalid one
+	SetDefaultTagName(" abc")
+	assert.Equal(t, DefaultTagName, defaultTagName)
+	// Valid one
+	SetDefaultTagName("abc")
+	assert.Equal(t, "abc", defaultTagName)
+	// Restore the tag
+	SetDefaultTagName(DefaultTagName)
+}
