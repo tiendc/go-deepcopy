@@ -6,10 +6,12 @@
 
 - True deep copy
 - Very fast (see [benchmarks](#benchmarks) section)
+- Ability to copy almost all Go types (number, string, bool, function, slice, map, struct)
 - Ability to copy data between convertible types (for example: copy from `int` to `float`)
 - Ability to copy between `pointers` and `values` (for example: copy from `*int` to `int`)
-- Ability to copy between struct fields and methods
-- Ability to copy between unexported struct fields
+- Ability to copy between struct fields through struct methods
+- Ability to copy inherited fields from embedded structs
+- Ability to copy unexported struct fields
 - Ability to configure copying behavior
 
 ## Installation
@@ -22,10 +24,10 @@ go get github.com/tiendc/go-deepcopy
 
 - [First example](#first-example)
 - [Copy between struct fields with different names](#copy-between-struct-fields-with-different-names)
-- [Ignore copying struct fields](#ignore-copying-struct-fields)
-- [Copy between struct fields and methods](#copy-between-struct-fields-and-methods)
-- [Copy between inherited fields from embedded structs](#copy-between-inherited-fields-from-embedded-structs)
-- [Copy between unexported struct fields](#copy-between-unexported-struct-fields)
+- [Skip copying struct fields](#skip-copying-struct-fields)
+- [Copy struct fields via struct methods](#copy-struct-fields-via-struct-methods)
+- [Copy inherited fields from embedded structs](#copy-inherited-fields-from-embedded-structs)
+- [Copy unexported struct fields](#copy-unexported-struct-fields)
 - [Configure copying behavior](#configure-copying-behavior)
 
 ### First example
@@ -91,9 +93,9 @@ go get github.com/tiendc/go-deepcopy
     // {Y:11 U:22}
 ```
 
-### Ignore copying struct fields
+### Skip copying struct fields
 
-- By default, matching fields will be copied. If you don't want to copy a field, use tag `-`.
+- By default, matching fields will be copied. If you don't want to copy a field, use tag value `-`.
 
   [Playground](https://go.dev/play/p/8KPe1Susjp1)
 
@@ -122,9 +124,9 @@ go get github.com/tiendc/go-deepcopy
     // {I:0 U:22}
 ```
 
-### Copy between struct fields and methods
+### Copy struct fields via struct methods
 
-- **Note**: If a copying method is defined in a struct, it will have higher priority than matching field.
+- **Note**: If a copying method is defined within a struct, it will have higher priority than matching fields.
 
   [Playground 1](https://go.dev/play/p/rCawGa5AZh3) /
   [Playground 2](https://go.dev/play/p/vDOhHXyUoyD)
@@ -161,19 +163,19 @@ func (d *D) CopyX(i int) error {
     // {x:11 U:22}
 ```
 
-### Copy between inherited fields from embedded structs
+### Copy inherited fields from embedded structs
 
 - This is default behaviour from version 1.0, for lower versions, you can use custom copying function
 to achieve the same result.
 
-  [Playground 1](https://go.dev/play/p/Zjj12AMRYXt) \
+  [Playground 1](https://go.dev/play/p/Zjj12AMRYXt) /
   [Playground 2](https://go.dev/play/p/cJGLqpPVHXI)
 
 ```go
     type SBase struct {
         St string
     }
-    // Source struct has embedded struct
+    // Source struct has an embedded one
     type S struct {
         SBase
         I int
@@ -197,9 +199,9 @@ to achieve the same result.
     // {I:11 St:xyz}
 ```
 
-### Copy between unexported struct fields
+### Copy unexported struct fields
 
-- By default, unexported struct fields will be ignored when copy. If you want to copy them, use tag `required`.
+- By default, unexported struct fields will be ignored when copy. If you want to copy them, use tag attribute `required`.
 
   [Playground](https://go.dev/play/p/HYWFbnafdfr)
 
@@ -250,7 +252,7 @@ to achieve the same result.
     // error: ErrTypeNonCopyable: int -> *int
 ```
 
-- Ignore ErrTypeNonCopyable, the process will not return that error, but some copying won't be performed.
+- Ignore ErrTypeNonCopyable, the process will not return that kind of error, but some copyings won't be performed.
   
   [Playground 1](https://go.dev/play/p/YPz49D_oiTY) /
   [Playground 2](https://go.dev/play/p/DNrBJUP-rrM)
@@ -282,7 +284,7 @@ to achieve the same result.
 
 ### Go-DeepCopy vs ManualCopy vs JinzhuCopier vs Deepcopier
 
-This is the benchmark result on the latest version of the lib.
+This is the benchmark result of the latest version of the lib.
 
   [Benchmark code](https://gist.github.com/tiendc/0a739fd880b9aac5373de95458d54808)
 
