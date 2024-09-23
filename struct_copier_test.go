@@ -169,6 +169,26 @@ func Test_Copy_struct(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, DD{I: 100, F: 2}, d)
 	})
+
+	t.Run("#10: structs have fields of type function", func(t *testing.T) {
+		type SS struct {
+			I  int
+			Fn func(int) string `copy:"fn"`
+		}
+		type DD struct {
+			I  int
+			Fn func(int) string `copy:"fn"`
+		}
+
+		fn := func(int) string { return "abc" }
+
+		var s SS = SS{I: 1, Fn: fn}
+		var d DD = DD{I: 100}
+		err := Copy(&d, s)
+		assert.Nil(t, err)
+		assert.NotNil(t, d.Fn)
+		assert.Equal(t, "abc", d.Fn(1))
+	})
 }
 
 func Test_Copy_struct_error(t *testing.T) {
