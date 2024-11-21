@@ -290,16 +290,19 @@ This is the benchmark result of the latest version of the lib.
 
 ```
 BenchmarkCopy/Go-DeepCopy
-BenchmarkCopy/Go-DeepCopy-10         	 1753189	       686.7 ns/op
-
+BenchmarkCopy/Go-DeepCopy-10         	 1737516	       691.4 ns/op
 BenchmarkCopy/ManualCopy
-BenchmarkCopy/ManualCopy-10          	29309067	        40.64 ns/op
-
-BenchmarkCopy/JinzhuCopier
-BenchmarkCopy/JinzhuCopier-10        	  135361	      8873 ns/op
-
-BenchmarkCopy/Deepcopier
-BenchmarkCopy/Deepcopier-10          	   40412	     31290 ns/op
+BenchmarkCopy/ManualCopy-10          	25902331	        41.14 ns/op
+BenchmarkCopy/jinzhu/copier
+BenchmarkCopy/jinzhu/copier-10       	  133630	      8929 ns/op
+BenchmarkCopy/ulule/deepcopier
+BenchmarkCopy/ulule/deepcopier-10    	   39864	     29785 ns/op
+BenchmarkCopy/mohae/deepcopy
+BenchmarkCopy/mohae/deepcopy-10      	  491649	      2227 ns/op
+BenchmarkCopy/barkimedes/deepcopy
+BenchmarkCopy/barkimedes/deepcopy-10 	  483442	      2450 ns/op
+BenchmarkCopy/mitchellh/copystructure
+BenchmarkCopy/mitchellh/copystructure-10   99501	     11379 ns/op
 ```
 
 ## Contributing
