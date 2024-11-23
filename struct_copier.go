@@ -29,15 +29,6 @@ func (c *structCopier) Copy(dst, src reflect.Value) error {
 
 //nolint:gocognit,gocyclo
 func (c *structCopier) init(dstType, srcType reflect.Type) (err error) {
-	cacheKey := c.ctx.createCacheKey(dstType, srcType)
-	c.ctx.mu.RLock()
-	cp, ok := c.ctx.copierCacheMap[*cacheKey]
-	c.ctx.mu.RUnlock()
-	if ok {
-		c.fieldCopiers = cp.(*structCopier).fieldCopiers //nolint:forcetypeassert
-		return nil
-	}
-
 	var dstCopyingMethods map[string]*reflect.Method
 	if c.ctx.CopyBetweenStructFieldAndMethod {
 		dstCopyingMethods = c.parseCopyingMethods(dstType)
@@ -109,9 +100,6 @@ func (c *structCopier) init(dstType, srcType reflect.Type) (err error) {
 		}
 	}
 
-	c.ctx.mu.Lock()
-	c.ctx.copierCacheMap[*cacheKey] = c
-	c.ctx.mu.Unlock()
 	return nil
 }
 
@@ -206,7 +194,7 @@ func (c *structCopier) parseAllNestedFields(typ reflect.Type, index []int) map[s
 func (c *structCopier) buildCopier(dstType, srcType reflect.Type, dstDetail, srcDetail *fieldDetail) (copier, error) {
 	df, sf := dstDetail.field, srcDetail.field
 
-	// OPTIMIZATION: buildCopier() can handle this nicely, but it will add another wrapping layer
+	// OPTIMIZATION: buildCopier() can handle this nicely
 	if simpleKindMask&(1<<sf.Type.Kind()) > 0 {
 		if sf.Type == df.Type {
 			// NOTE: pass nil to unset custom copier and trigger direct copying.
@@ -214,7 +202,7 @@ func (c *structCopier) buildCopier(dstType, srcType reflect.Type, dstDetail, src
 			return c.createField2FieldCopier(dstDetail, srcDetail, nil), nil
 		}
 		if sf.Type.ConvertibleTo(df.Type) {
-			return c.createField2FieldCopier(dstDetail, srcDetail, &convCopier{}), nil
+			return c.createField2FieldCopier(dstDetail, srcDetail, defaultConvCopier), nil
 		}
 	}
 

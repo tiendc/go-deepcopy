@@ -18,6 +18,8 @@ func (c *nopCopier) Copy(dst, src reflect.Value) error {
 	return nil
 }
 
+var defaultNopCopier = &nopCopier{}
+
 // value2PtrCopier data structure of copier that copies from a value to a pointer
 type value2PtrCopier struct {
 	ctx    *Context
@@ -93,6 +95,8 @@ func (c *directCopier) Copy(dst, src reflect.Value) error {
 	return nil
 }
 
+var defaultDirectCopier = &directCopier{}
+
 // convCopier copier that does copying with converting `src` value to `dst` type
 type convCopier struct {
 }
@@ -101,3 +105,5 @@ func (c *convCopier) Copy(dst, src reflect.Value) error {
 	dst.Set(src.Convert(dst.Type()))
 	return nil
 }
+
+var defaultConvCopier = &convCopier{}

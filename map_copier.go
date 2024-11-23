@@ -44,24 +44,24 @@ func (c *mapCopier) init(dstType, srcType reflect.Type) error {
 	dstKeyType, dstValType := dstType.Key(), dstType.Elem()
 	buildKeyCopier, buildValCopier := true, true
 
-	// OPTIMIZATION: buildCopier() can handle this nicely, but it will add another wrapping layer
+	// OPTIMIZATION: buildCopier() can handle this nicely
 	if simpleKindMask&(1<<srcKeyType.Kind()) > 0 {
 		if srcKeyType == dstKeyType {
 			// Just keep c.keyCopier = nil
 			buildKeyCopier = false
 		} else if srcKeyType.ConvertibleTo(dstKeyType) {
-			c.keyCopier = &mapItemCopier{dstType: dstKeyType, copier: &convCopier{}}
+			c.keyCopier = &mapItemCopier{dstType: dstKeyType, copier: defaultConvCopier}
 			buildKeyCopier = false
 		}
 	}
 
-	// OPTIMIZATION: buildCopier() can handle this nicely, but it will add another wrapping layer
+	// OPTIMIZATION: buildCopier() can handle this nicely
 	if simpleKindMask&(1<<srcValType.Kind()) > 0 {
 		if srcValType == dstValType {
 			// Just keep c.valueCopier = nil
 			buildValCopier = false
 		} else if srcValType.ConvertibleTo(dstValType) {
-			c.valueCopier = &mapItemCopier{dstType: dstValType, copier: &convCopier{}}
+			c.valueCopier = &mapItemCopier{dstType: dstValType, copier: defaultConvCopier}
 			buildValCopier = false
 		}
 	}
