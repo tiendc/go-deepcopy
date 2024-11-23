@@ -48,32 +48,6 @@ func (c *sliceCopier) Copy(dst, src reflect.Value) error {
 }
 
 func (c *sliceCopier) init(dstType, srcType reflect.Type) (err error) {
-	dstType, srcType = dstType.Elem(), srcType.Elem()
-	srcKind := srcType.Kind()
-
-	// OPTIMIZATION: buildCopier() can handle this nicely, but it will add another wrapping layer
-	if simpleKindMask&(1<<srcKind) > 0 {
-		if srcType == dstType {
-			c.itemCopier = &directCopier{}
-			return nil
-		}
-		if srcType.ConvertibleTo(dstType) {
-			c.itemCopier = &convCopier{}
-			return nil
-		}
-	}
-
-	// OPTIMIZATION: buildCopier() can handle this nicely, but it will add another wrapping layer
-	if srcKind == reflect.Struct {
-		c.ctx.mu.RLock()
-		cp, ok := c.ctx.copierCacheMap[*c.ctx.createCacheKey(dstType, srcType)]
-		c.ctx.mu.RUnlock()
-		if ok {
-			c.itemCopier = cp
-			return nil
-		}
-	}
-
-	c.itemCopier, err = buildCopier(c.ctx, dstType, srcType)
+	c.itemCopier, err = buildCopier(c.ctx, dstType.Elem(), srcType.Elem())
 	return
 }

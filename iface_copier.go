@@ -9,6 +9,10 @@ type fromIfaceCopier struct {
 	ctx *Context
 }
 
+func (c *fromIfaceCopier) init(dst, src reflect.Type) error {
+	return nil
+}
+
 // Copy implementation of Copy function for from-iface copier
 func (c *fromIfaceCopier) Copy(dst, src reflect.Value) error {
 	for src.Kind() == reflect.Interface {
@@ -28,6 +32,10 @@ func (c *fromIfaceCopier) Copy(dst, src reflect.Value) error {
 // toIfaceCopier data structure of copier that copies to an interface
 type toIfaceCopier struct {
 	ctx *Context
+}
+
+func (c *toIfaceCopier) init(dst, src reflect.Type) error {
+	return nil
 }
 
 // Copy implementation of Copy function for to-iface copier

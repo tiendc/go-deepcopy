@@ -98,96 +98,109 @@ func defaultContext() *Context {
 // buildCopier build copier for handling copy from `srcType` to `dstType`
 //
 //nolint:gocognit,gocyclo
-func buildCopier(ctx *Context, dstType, srcType reflect.Type) (copier, error) {
+func buildCopier(ctx *Context, dstType, srcType reflect.Type) (copier copier, err error) {
+	// Finds cached copier, returns it if found
+	cacheKey := ctx.createCacheKey(dstType, srcType)
+	ctx.mu.RLock()
+	cp, ok := ctx.copierCacheMap[*cacheKey]
+	ctx.mu.RUnlock()
+	if ok {
+		return cp, nil
+	}
+
 	dstKind, srcKind := dstType.Kind(), srcType.Kind()
+
+	// Trivial case
+	if simpleKindMask&(1<<srcKind) > 0 {
+		if dstType == srcType {
+			copier = defaultDirectCopier
+			goto OnComplete
+		}
+		if srcType.ConvertibleTo(dstType) {
+			copier = defaultConvCopier
+			goto OnComplete
+		}
+	}
+
 	if dstKind == reflect.Interface {
-		return &toIfaceCopier{ctx: ctx}, nil
+		cp := &toIfaceCopier{ctx: ctx}
+		copier, err = cp, cp.init(dstType, srcType)
+		goto OnComplete
 	}
 	if srcKind == reflect.Interface {
-		return &fromIfaceCopier{ctx: ctx}, nil
+		cp := &fromIfaceCopier{ctx: ctx}
+		copier, err = cp, cp.init(dstType, srcType)
+		goto OnComplete
 	}
 
 	//nolint:nestif
 	if srcKind == reflect.Pointer {
 		if dstKind == reflect.Pointer { // ptr -> ptr
-			copier := &ptr2PtrCopier{ctx: ctx}
-			if err := copier.init(dstType, srcType); err != nil {
-				return nil, err
-			}
-			return copier, nil
+			cp := &ptr2PtrCopier{ctx: ctx}
+			copier, err = cp, cp.init(dstType, srcType)
+			goto OnComplete
 		} else { // ptr -> value
 			if !ctx.CopyBetweenPtrAndValue {
-				return onNonCopyable(ctx, dstType, srcType)
+				goto OnNonCopyable
 			}
-			copier := &ptr2ValueCopier{ctx: ctx}
-			if err := copier.init(dstType, srcType); err != nil {
-				return nil, err
-			}
-			return copier, nil
+			cp := &ptr2ValueCopier{ctx: ctx}
+			copier, err = cp, cp.init(dstType, srcType)
+			goto OnComplete
 		}
 	} else {
 		if dstKind == reflect.Pointer { // value -> ptr
 			if !ctx.CopyBetweenPtrAndValue {
-				return onNonCopyable(ctx, dstType, srcType)
+				goto OnNonCopyable
 			}
-			copier := &value2PtrCopier{ctx: ctx}
-			if err := copier.init(dstType, srcType); err != nil {
-				return nil, err
-			}
-			return copier, nil
+			cp := &value2PtrCopier{ctx: ctx}
+			copier, err = cp, cp.init(dstType, srcType)
+			goto OnComplete
 		}
 	}
 
 	// Both are not Pointers
 	if srcKind == reflect.Slice || srcKind == reflect.Array {
 		if dstKind != reflect.Slice && dstKind != reflect.Array {
-			return onNonCopyable(ctx, dstType, srcType)
+			goto OnNonCopyable
 		}
-		copier := &sliceCopier{ctx: ctx}
-		if err := copier.init(dstType, srcType); err != nil {
-			return nil, err
-		}
-		return copier, nil
+		cp := &sliceCopier{ctx: ctx}
+		copier, err = cp, cp.init(dstType, srcType)
+		goto OnComplete
 	}
 
 	if srcKind == reflect.Struct {
 		if dstKind != reflect.Struct {
-			return onNonCopyable(ctx, dstType, srcType)
+			goto OnNonCopyable
 		}
-		copier := &structCopier{ctx: ctx}
-		if err := copier.init(dstType, srcType); err != nil {
-			return nil, err
-		}
-		return copier, nil
+		cp := &structCopier{ctx: ctx}
+		copier, err = cp, cp.init(dstType, srcType)
+		goto OnComplete
 	}
 
 	if srcKind == reflect.Map {
 		if dstKind != reflect.Map {
-			return onNonCopyable(ctx, dstType, srcType)
+			goto OnNonCopyable
 		}
-		copier := &mapCopier{ctx: ctx}
-		if err := copier.init(dstType, srcType); err != nil {
-			return nil, err
-		}
-		return copier, nil
+		cp := &mapCopier{ctx: ctx}
+		copier, err = cp, cp.init(dstType, srcType)
+		goto OnComplete
 	}
 
-	// Trivial case
-	if simpleKindMask&(1<<srcKind) > 0 {
-		if dstType == srcType {
-			return &directCopier{}, nil
+OnComplete:
+	if err == nil {
+		if copier != nil {
+			ctx.mu.Lock()
+			ctx.copierCacheMap[*cacheKey] = copier
+			ctx.mu.Unlock()
+			return copier, err
 		}
-		if srcType.ConvertibleTo(dstType) {
-			return &convCopier{}, nil
-		}
+	} else {
+		return nil, err
 	}
 
-	return onNonCopyable(ctx, dstType, srcType)
-}
-
-func onNonCopyable(ctx *Context, dstType, srcType reflect.Type) (copier, error) {
+OnNonCopyable:
 	if ctx.IgnoreNonCopyableTypes {
-		return &nopCopier{}, nil
+		return defaultNopCopier, nil
 	}
 	return nil, fmt.Errorf("%w: %v -> %v", ErrTypeNonCopyable, srcType, dstType)
 }

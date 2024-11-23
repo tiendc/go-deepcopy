@@ -92,26 +92,10 @@ func Copy(dst, src any, options ...Option) (err error) {
 	}
 	ctx.prepare()
 
-	cacheKey := ctx.createCacheKey(dstType, srcType)
-	if ctx.UseGlobalCache {
-		ctx.mu.RLock()
-		cp, ok := ctx.copierCacheMap[*cacheKey]
-		ctx.mu.RUnlock()
-		if ok {
-			return cp.Copy(dstVal, srcVal)
-		}
-	}
-
 	cp, err := buildCopier(ctx, dstType, srcType)
 	if err != nil {
 		return err
 	}
-	if ctx.UseGlobalCache {
-		ctx.mu.Lock()
-		ctx.copierCacheMap[*cacheKey] = cp
-		ctx.mu.Unlock()
-	}
-
 	return cp.Copy(dstVal, srcVal)
 }
 
