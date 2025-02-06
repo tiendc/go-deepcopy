@@ -189,6 +189,23 @@ func Test_Copy_struct(t *testing.T) {
 		assert.NotNil(t, d.Fn)
 		assert.Equal(t, "abc", d.Fn(1))
 	})
+
+	t.Run("#11: cycle reference", func(t *testing.T) {
+		type SS struct {
+			I   int
+			Ref *SS
+		}
+		type DD struct {
+			I   int
+			Ref *DD
+		}
+
+		var s SS = SS{I: 1, Ref: &SS{I: 2, Ref: &SS{I: 3}}}
+		var d DD = DD{}
+		err := Copy(&d, s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD{I: 1, Ref: &DD{I: 2, Ref: &DD{I: 3}}}, d)
+	})
 }
 
 func Test_Copy_struct_error(t *testing.T) {
