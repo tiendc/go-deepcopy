@@ -175,20 +175,17 @@ func buildCopier(ctx *Context, dstType, srcType reflect.Type) (copier copier, er
 		// At this point, cachedCopier is `nil`.
 		// Seems like a circular reference, use inline copier.
 		if cachedCopierFound {
-			return &inlineCopier{
-				ctx:     ctx,
-				dstType: dstType,
-				srcType: srcType,
-			}, nil
+			return &inlineCopier{ctx: ctx, dstType: dstType, srcType: srcType}, nil
 		}
 		// Circular reference can happen via struct field reference.
 		// Put a `nil` copier to the cache to mark that the copier building for the struct types is in-progress.
-		ctx.mu.RLock()
-		ctx.copierCacheMap[*cacheKey] = nil
-		ctx.mu.RUnlock()
+		setCachedCopier(ctx, cacheKey, nil)
 
 		cp := &structCopier{ctx: ctx}
 		copier, err = cp, cp.init(dstType, srcType)
+		if err != nil {
+			deleteCachedCopier(ctx, cacheKey)
+		}
 		goto OnComplete
 	}
 
@@ -204,9 +201,7 @@ func buildCopier(ctx *Context, dstType, srcType reflect.Type) (copier copier, er
 OnComplete:
 	if err == nil {
 		if copier != nil {
-			ctx.mu.Lock()
-			ctx.copierCacheMap[*cacheKey] = copier
-			ctx.mu.Unlock()
+			setCachedCopier(ctx, cacheKey, copier)
 			return copier, err
 		}
 	} else {
@@ -218,4 +213,16 @@ OnNonCopyable:
 		return defaultNopCopier, nil
 	}
 	return nil, fmt.Errorf("%w: %v -> %v", ErrTypeNonCopyable, srcType, dstType)
+}
+
+func setCachedCopier(ctx *Context, cacheKey *cacheKey, cp copier) {
+	ctx.mu.RLock()
+	ctx.copierCacheMap[*cacheKey] = cp
+	ctx.mu.RUnlock()
+}
+
+func deleteCachedCopier(ctx *Context, cacheKey *cacheKey) {
+	ctx.mu.RLock()
+	delete(ctx.copierCacheMap, *cacheKey)
+	ctx.mu.RUnlock()
 }
