@@ -107,3 +107,19 @@ func (c *convCopier) Copy(dst, src reflect.Value) error {
 }
 
 var defaultConvCopier = &convCopier{}
+
+// inlineCopier copier that does copying on the fly.
+// This copier is usually used to avoid circular reference.
+type inlineCopier struct {
+	ctx     *Context
+	dstType reflect.Type
+	srcType reflect.Type
+}
+
+func (c *inlineCopier) Copy(dst, src reflect.Value) error {
+	cp, err := buildCopier(c.ctx, c.dstType, c.srcType)
+	if err != nil {
+		return err
+	}
+	return cp.Copy(dst, src)
+}
