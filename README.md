@@ -29,6 +29,7 @@ go get github.com/tiendc/go-deepcopy
 - [Copy struct fields via struct methods](#copy-struct-fields-via-struct-methods)
 - [Copy inherited fields from embedded structs](#copy-inherited-fields-from-embedded-structs)
 - [Set destination struct fields as `nil` on `zero`](#set-destination-struct-fields-as-nil-on-zero)
+- [PostCopy event method for structs](#postcopy-event-method-for-structs)
 - [Copy unexported struct fields](#copy-unexported-struct-fields)
 - [Configure extra copying behaviors](#configure-extra-copying-behaviors)
 
@@ -237,6 +238,41 @@ convenient when you don't want to send something like a date of `0001-01-01` to 
     // {I:11 Time:2025-02-08 12:31:11...} (source is not zero, so be the destination)
 ```
 
+### `PostCopy` event method for structs
+
+- This is a new feature from version 2.0. If a destination struct has PostCopy() method, it will be called.
+
+  [Playground](https://go.dev/play/p/fGhGZumaRUD)
+
+```go
+    type S struct {
+        I  int
+        St string
+    }
+    type D struct {
+        I  int
+        St string
+    }
+    func (d *D) PostCopy(src any) error { // PostCopy must be defined on struct pointer, not value
+        // s := src.(S)
+        d.I *= 2
+        d.St += d.St
+        return nil
+    }
+
+    src := []S{{I: 1, St: "a"}, {I: 11, St: "aa"}}
+    var dst []D
+    _ = deepcopy.Copy(&dst, &src)
+
+    for _, d := range dst {
+        fmt.Printf("%+v\n", d)
+    }
+
+    // Output:
+    // {I:11 St:aa}
+    // {I:1111 St:aaaa}
+```
+
 ### Copy unexported struct fields
 
 - By default, unexported struct fields will be ignored when copy. If you want to copy them, use tag attribute `required`.
@@ -322,25 +358,25 @@ convenient when you don't want to send something like a date of `0001-01-01` to 
 
 ### Go-DeepCopy vs ManualCopy vs JinzhuCopier vs Deepcopier
 
-This is the benchmark result of the latest version of the lib.
+This benchmark in done on go-deepcopy v2.0.0.
 
   [Benchmark code](https://gist.github.com/tiendc/0a739fd880b9aac5373de95458d54808)
 
 ```
 BenchmarkCopy/Go-DeepCopy
-BenchmarkCopy/Go-DeepCopy-10         	 1737516	       691.4 ns/op
+BenchmarkCopy/Go-DeepCopy-10         	 1674967	       703.8 ns/op
 BenchmarkCopy/ManualCopy
-BenchmarkCopy/ManualCopy-10          	25902331	        41.14 ns/op
+BenchmarkCopy/ManualCopy-10          	29601216	        41.22 ns/op
 BenchmarkCopy/jinzhu/copier
-BenchmarkCopy/jinzhu/copier-10       	  133630	      8929 ns/op
+BenchmarkCopy/jinzhu/copier-10       	  134443	      8895 ns/op
 BenchmarkCopy/ulule/deepcopier
-BenchmarkCopy/ulule/deepcopier-10    	   39864	     29785 ns/op
+BenchmarkCopy/ulule/deepcopier-10    	   40231	     29675 ns/op
 BenchmarkCopy/mohae/deepcopy
-BenchmarkCopy/mohae/deepcopy-10      	  491649	      2227 ns/op
+BenchmarkCopy/mohae/deepcopy-10      	  503226	      2204 ns/op
 BenchmarkCopy/barkimedes/deepcopy
-BenchmarkCopy/barkimedes/deepcopy-10 	  483442	      2450 ns/op
+BenchmarkCopy/barkimedes/deepcopy-10 	  465763	      2424 ns/op
 BenchmarkCopy/mitchellh/copystructure
-BenchmarkCopy/mitchellh/copystructure-10   99501	     11379 ns/op
+BenchmarkCopy/mitchellh/copystructure-10  101506	     11316 ns/op
 ```
 
 ## Contributing

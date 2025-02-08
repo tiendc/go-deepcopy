@@ -8,13 +8,15 @@ import (
 )
 
 var (
-	errType = reflect.TypeOf((*error)(nil)).Elem()
+	errType   = reflect.TypeOf((*error)(nil)).Elem()
+	ifaceType = reflect.TypeOf((*any)(nil)).Elem()
 )
 
 // structCopier data structure of copier that copies from a `struct`
 type structCopier struct {
-	ctx          *Context
-	fieldCopiers []copier
+	ctx            *Context
+	fieldCopiers   []copier
+	postCopyMethod *int
 }
 
 // Copy implementation of Copy function for struct copier
@@ -24,16 +26,25 @@ func (c *structCopier) Copy(dst, src reflect.Value) error {
 			return err
 		}
 	}
+	// Executes post-copy function on the struct values
+	if c.postCopyMethod != nil {
+		dst = dst.Addr().Method(*c.postCopyMethod)
+		errVal := dst.Call([]reflect.Value{src})[0]
+		if errVal.IsNil() {
+			return nil
+		}
+		err, ok := errVal.Interface().(error)
+		if !ok { // Should never get here
+			return fmt.Errorf("%w: PostCopy method returns non-error value", ErrTypeInvalid)
+		}
+		return err
+	}
 	return nil
 }
 
 //nolint:gocognit,gocyclo
 func (c *structCopier) init(dstType, srcType reflect.Type) (err error) {
-	var dstCopyingMethods map[string]*reflect.Method
-	if c.ctx.CopyBetweenStructFieldAndMethod {
-		dstCopyingMethods = c.parseCopyingMethods(dstType)
-	}
-
+	dstCopyingMethods := c.parseStructMethods(dstType)
 	dstDirectFields, mapDstDirectFields, dstInheritedFields, mapDstInheritedFields := c.parseAllFields(dstType)
 	srcDirectFields, mapSrcDirectFields, srcInheritedFields, mapSrcInheritedFields := c.parseAllFields(srcType)
 	c.fieldCopiers = make([]copier, 0, len(dstDirectFields)+len(dstInheritedFields))
@@ -103,25 +114,37 @@ func (c *structCopier) init(dstType, srcType reflect.Type) (err error) {
 	return nil
 }
 
-// parseCopyingMethods collects all copying methods from the given struct type
-func (c *structCopier) parseCopyingMethods(structType reflect.Type) map[string]*reflect.Method {
+// parseStructMethods collects all copying methods from the given struct type
+func (c *structCopier) parseStructMethods(structType reflect.Type) map[string]*reflect.Method {
 	ptrType := reflect.PointerTo(structType)
 	numMethods := ptrType.NumMethod()
 	result := make(map[string]*reflect.Method, numMethods)
 	for i := 0; i < numMethods; i++ {
 		method := ptrType.Method(i)
-		// Method name must be something like `Copy<something>`
-		if !strings.HasPrefix(method.Name, "Copy") {
-			continue
+		switch {
+		// Field copying method name must be something like `Copy<something>`
+		case c.ctx.CopyBetweenStructFieldAndMethod && strings.HasPrefix(method.Name, "Copy"):
+			if method.Type.NumIn() != 2 || method.Type.NumOut() != 1 {
+				continue
+			}
+			if method.Type.Out(0) != errType {
+				continue
+			}
+			result[method.Name] = &method
+
+		// The method is for `post-copy` event
+		case method.Name == "PostCopy":
+			if method.Type.NumIn() != 2 || method.Type.NumOut() != 1 {
+				continue
+			}
+			if method.Type.In(1) != ifaceType {
+				continue
+			}
+			if method.Type.Out(0) != errType {
+				continue
+			}
+			c.postCopyMethod = &method.Index
 		}
-		// Method must accept an arg and return error type (1st arg is the struct itself)
-		if method.Type.NumIn() != 2 || method.Type.NumOut() != 1 {
-			continue
-		}
-		if method.Type.Out(0) != errType {
-			continue
-		}
-		result[method.Name] = &method
 	}
 	return result
 }
