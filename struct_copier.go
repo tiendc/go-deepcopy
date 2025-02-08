@@ -191,18 +191,21 @@ func (c *structCopier) parseAllNestedFields(typ reflect.Type, index []int) map[s
 	return result
 }
 
-func (c *structCopier) buildCopier(dstType, srcType reflect.Type, dstDetail, srcDetail *fieldDetail) (copier, error) {
-	df, sf := dstDetail.field, srcDetail.field
+func (c *structCopier) buildCopier(
+	dstStructType, srcStructType reflect.Type,
+	dstFieldDetail, srcFieldDetail *fieldDetail,
+) (copier, error) {
+	df, sf := dstFieldDetail.field, srcFieldDetail.field
 
 	// OPTIMIZATION: buildCopier() can handle this nicely
 	if simpleKindMask&(1<<sf.Type.Kind()) > 0 {
 		if sf.Type == df.Type {
 			// NOTE: pass nil to unset custom copier and trigger direct copying.
 			// We can pass `&directCopier{}` for the same result (but it's a bit slower).
-			return c.createField2FieldCopier(dstDetail, srcDetail, nil), nil
+			return c.createField2FieldCopier(dstFieldDetail, srcFieldDetail, nil), nil
 		}
 		if sf.Type.ConvertibleTo(df.Type) {
-			return c.createField2FieldCopier(dstDetail, srcDetail, defaultConvCopier), nil
+			return c.createField2FieldCopier(dstFieldDetail, srcFieldDetail, defaultConvCopier), nil
 		}
 	}
 
@@ -210,18 +213,18 @@ func (c *structCopier) buildCopier(dstType, srcType reflect.Type, dstDetail, src
 	if err != nil {
 		return nil, err
 	}
-	if c.ctx.IgnoreNonCopyableTypes && (srcDetail.required || dstDetail.required) {
+	if c.ctx.IgnoreNonCopyableTypes && (srcFieldDetail.required || dstFieldDetail.required) {
 		_, isNopCopier := cp.(*nopCopier)
-		if isNopCopier && dstDetail.required {
+		if isNopCopier && dstFieldDetail.required {
 			return nil, fmt.Errorf("%w: struct field '%v[%s]' requires copying",
-				ErrFieldRequireCopying, dstType, dstDetail.field.Name)
+				ErrFieldRequireCopying, dstStructType, dstFieldDetail.field.Name)
 		}
-		if isNopCopier && srcDetail.required {
+		if isNopCopier && srcFieldDetail.required {
 			return nil, fmt.Errorf("%w: struct field '%v[%s]' requires copying",
-				ErrFieldRequireCopying, srcType, srcDetail.field.Name)
+				ErrFieldRequireCopying, srcStructType, srcFieldDetail.field.Name)
 		}
 	}
-	return c.createField2FieldCopier(dstDetail, srcDetail, cp), nil
+	return c.createField2FieldCopier(dstFieldDetail, srcFieldDetail, cp), nil
 }
 
 func (c *structCopier) createField2MethodCopier(dM *reflect.Method, sfDetail *fieldDetail) copier {
@@ -253,7 +256,8 @@ type structField2FieldCopier struct {
 	srcFieldUnexported bool
 }
 
-// Copy implementation of Copy function for struct field copier direct
+// Copy implementation of Copy function for struct field copier direct.
+// NOTE: `dst` and `src` are struct values.
 func (c *structField2FieldCopier) Copy(dst, src reflect.Value) (err error) {
 	if len(c.srcFieldIndex) == 1 {
 		src = src.Field(c.srcFieldIndex[0])
@@ -328,7 +332,8 @@ type structField2MethodCopier struct {
 	srcFieldUnexported  bool
 }
 
-// Copy implementation of Copy function for struct field copier between `fields` and `methods`
+// Copy implementation of Copy function for struct field copier between `fields` and `methods`.
+// NOTE: `dst` and `src` are struct values.
 func (c *structField2MethodCopier) Copy(dst, src reflect.Value) (err error) {
 	if len(c.srcFieldIndex) == 1 {
 		src = src.Field(c.srcFieldIndex[0])
