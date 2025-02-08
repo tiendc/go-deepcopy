@@ -1067,3 +1067,80 @@ func Test_Copy_struct_with_set_nil_on_zero(t *testing.T) {
 		assert.Equal(t, DD{I: 1, S: nil}, d)
 	})
 }
+
+type testS2 struct {
+	I int
+	S string
+}
+
+type testD2 struct {
+	I int
+	S string
+}
+
+func (d *testD2) PostCopy(src any) error {
+	testS2, _ := src.(testS2)
+	if testS2.I == 100 {
+		return errTest
+	}
+	d.I *= 2
+	d.S += d.S
+	return nil
+}
+
+type testD22 struct {
+	I int
+	S string
+}
+
+func (d *testD22) PostCopy(src any) any {
+	d.I *= 2
+	d.S += d.S
+	return nil
+}
+
+type testD23 struct {
+	I int
+	S string
+}
+
+// PostCopy is defined within struct value, not pointer
+func (d testD23) PostCopy(src any) error {
+	d.I *= 2
+	d.S += d.S
+	return nil
+}
+
+func Test_Copy_struct_with_post_copy_event(t *testing.T) {
+	t.Run("#1: success without error", func(t *testing.T) {
+		s := testS2{I: 1, S: "a"}
+		d := testD2{}
+		err := Copy(&d, s)
+		assert.Nil(t, err)
+		assert.Equal(t, testD2{I: 2, S: "aa"}, d)
+	})
+
+	t.Run("#2: PostCopy returns error", func(t *testing.T) {
+		s := testS2{I: 100, S: "a"} // When testS2.I == 100, PostCopy returns error
+		d := testD2{}
+		err := Copy(&d, s)
+		assert.NotNil(t, err)
+		assert.ErrorIs(t, err, errTest)
+	})
+
+	t.Run("#3: dstStruct.PostCopy not satisfied", func(t *testing.T) {
+		s := testS2{I: 1, S: "a"}
+		d := testD22{}
+		err := Copy(&d, s)
+		assert.Nil(t, err)
+		assert.Equal(t, testD22{I: 1, S: "a"}, d)
+	})
+
+	t.Run("#4: dstStruct.PostCopy is defined on struct value, not pointer", func(t *testing.T) {
+		s := testS2{I: 1, S: "a"}
+		d := testD23{}
+		err := Copy(&d, s)
+		assert.Nil(t, err)
+		assert.Equal(t, testD23{I: 1, S: "a"}, d) // won't work
+	})
+}
