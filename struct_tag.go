@@ -7,10 +7,11 @@ import (
 
 // fieldDetail stores field copying detail parsed from a struct field
 type fieldDetail struct {
-	field    *reflect.StructField
-	key      string
-	ignored  bool
-	required bool
+	field     *reflect.StructField
+	key       string
+	ignored   bool
+	required  bool
+	nilOnZero bool
 
 	done         bool
 	index        []int
@@ -42,8 +43,17 @@ func parseTag(detail *fieldDetail) {
 	}
 
 	for _, tagOpt := range tags[1:] {
-		if tagOpt == "required" && !detail.ignored {
-			detail.required = true
+		switch tagOpt {
+		case "required":
+			if !detail.ignored {
+				detail.required = true
+			}
+		case "nilonzero":
+			k := detail.field.Type.Kind()
+			// Set nil on zero only applies to types which can set `nil`
+			if k == reflect.Pointer || k == reflect.Interface || k == reflect.Slice || k == reflect.Map {
+				detail.nilOnZero = true
+			}
 		}
 	}
 }

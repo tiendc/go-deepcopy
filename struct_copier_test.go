@@ -2,6 +2,7 @@ package deepcopy
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -863,5 +864,206 @@ func Test_Copy_struct_with_embedded_struct_error(t *testing.T) {
 		d := DD{}
 		err := Copy(&d, s)
 		assert.ErrorIs(t, err, ErrFieldRequireCopying)
+	})
+}
+
+func Test_Copy_struct_with_set_nil_on_zero(t *testing.T) {
+	t.Run("#1: primitive type", func(t *testing.T) {
+		type SS struct {
+			I int
+			U uint
+		}
+		type DD struct {
+			I int
+			U *uint `copy:",nilonzero"`
+		}
+
+		// Source field is not zero
+		s := SS{I: 1, U: 11}
+		d := DD{}
+		err := Copy(&d, s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD{I: 1, U: ptrOf(uint(11))}, d)
+
+		// Source field is zero
+		s = SS{I: 1, U: 0}
+		d = DD{}
+		err = Copy(&d, s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD{I: 1, U: nil}, d)
+	})
+
+	t.Run("#2: string type", func(t *testing.T) {
+		type SS struct {
+			I int
+			S string
+		}
+		type DD struct {
+			I int
+			S *string `copy:",nilonzero"`
+		}
+
+		// Source field is not zero
+		s := SS{I: 1, S: "x"}
+		d := DD{}
+		err := Copy(&d, s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD{I: 1, S: ptrOf("x")}, d)
+
+		// Source field is zero
+		s = SS{I: 1, S: ""}
+		d = DD{}
+		err = Copy(&d, s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD{I: 1, S: nil}, d)
+	})
+
+	t.Run("#3: time.Time type", func(t *testing.T) {
+		type SS struct {
+			I    int
+			Time time.Time
+		}
+		type DD struct {
+			I    int
+			Time *time.Time `copy:",nilonzero"`
+		}
+
+		// Source field is not zero
+		dt := time.Now()
+		s := SS{I: 1, Time: dt}
+		d := DD{}
+		err := Copy(&d, &s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD{I: 1, Time: ptrOf(dt)}, d)
+
+		// Source field is zero
+		s = SS{I: 1, Time: time.Time{}}
+		d = DD{}
+		err = Copy(&d, &s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD{I: 1, Time: nil}, d)
+	})
+
+	t.Run("#3b: time.Time type with deeper level", func(t *testing.T) {
+		type SS struct {
+			I    int
+			Time time.Time
+		}
+		type DD struct {
+			I    int
+			Time ***time.Time `copy:",nilonzero"`
+		}
+
+		// Source field is not zero
+		dt := time.Now()
+		s := SS{I: 1, Time: dt}
+		d := DD{}
+		err := Copy(&d, &s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD{I: 1, Time: ptrOf(ptrOf(ptrOf(dt)))}, d)
+
+		// Source field is zero
+		s = SS{I: 1, Time: time.Time{}}
+		d = DD{}
+		err = Copy(&d, &s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD{I: 1, Time: nil}, d)
+	})
+
+	t.Run("#4: custom struct type", func(t *testing.T) {
+		type StructType struct {
+			I int
+			S *string
+		}
+		type SS struct {
+			I  int
+			ST StructType
+		}
+		type DD struct {
+			I  int
+			ST *StructType `copy:",nilonzero"`
+		}
+
+		s := SS{I: 1, ST: StructType{}}
+		d := DD{}
+		err := Copy(&d, &s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD{I: 1, ST: nil}, d)
+	})
+
+	t.Run("#5: dst field is interface type", func(t *testing.T) {
+		type SS struct {
+			I    int
+			Time time.Time
+		}
+		type DD struct {
+			I    int
+			Time any `copy:",nilonzero"`
+		}
+
+		// Source field is not zero
+		dt := time.Now()
+		s := SS{I: 1, Time: dt}
+		d := DD{}
+		err := Copy(&d, &s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD{I: 1, Time: dt}, d)
+
+		// Source field is zero
+		s = SS{I: 1, Time: time.Time{}}
+		d = DD{}
+		err = Copy(&d, &s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD{I: 1, Time: nil}, d)
+	})
+
+	t.Run("#6: dst field is map type", func(t *testing.T) {
+		type SS struct {
+			I int
+			M map[int]string
+		}
+		type DD struct {
+			I int
+			M map[int]string `copy:",nilonzero"`
+		}
+
+		// Source field is not zero
+		s := SS{I: 1, M: map[int]string{1: "a", 2: "b"}}
+		d := DD{}
+		err := Copy(&d, &s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD{I: 1, M: map[int]string{1: "a", 2: "b"}}, d)
+
+		// Source field is zero
+		s = SS{I: 1, M: map[int]string{}}
+		d = DD{}
+		err = Copy(&d, &s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD{I: 1, M: nil}, d)
+	})
+
+	t.Run("#7: dst field is slice type", func(t *testing.T) {
+		type SS struct {
+			I int
+			S []any
+		}
+		type DD struct {
+			I int
+			S []any `copy:",nilonzero"`
+		}
+
+		// Source field is not zero
+		s := SS{I: 1, S: []any{1, "a"}}
+		d := DD{}
+		err := Copy(&d, &s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD{I: 1, S: []any{1, "a"}}, d)
+
+		// Source field is zero
+		s = SS{I: 1, S: make([]any, 0, 10)}
+		d = DD{}
+		err = Copy(&d, &s)
+		assert.Nil(t, err)
+		assert.Equal(t, DD{I: 1, S: nil}, d)
 	})
 }

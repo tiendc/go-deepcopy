@@ -238,22 +238,24 @@ func (c *structCopier) createField2MethodCopier(dM *reflect.Method, sfDetail *fi
 
 func (c *structCopier) createField2FieldCopier(df, sf *fieldDetail, cp copier) copier {
 	return &structField2FieldCopier{
-		copier:             cp,
-		dstFieldIndex:      df.index,
-		dstFieldUnexported: !df.field.IsExported(),
-		srcFieldIndex:      sf.index,
-		srcFieldUnexported: !sf.field.IsExported(),
+		copier:               cp,
+		dstFieldIndex:        df.index,
+		dstFieldUnexported:   !df.field.IsExported(),
+		dstFieldSetNilOnZero: df.nilOnZero,
+		srcFieldIndex:        sf.index,
+		srcFieldUnexported:   !sf.field.IsExported(),
 	}
 }
 
 // structFieldDirectCopier data structure of copier that copies from
 // a src field to a dst field directly
 type structField2FieldCopier struct {
-	copier             copier
-	dstFieldIndex      []int
-	dstFieldUnexported bool
-	srcFieldIndex      []int
-	srcFieldUnexported bool
+	copier               copier
+	dstFieldIndex        []int
+	dstFieldUnexported   bool
+	dstFieldSetNilOnZero bool
+	srcFieldIndex        []int
+	srcFieldUnexported   bool
 }
 
 // Copy implementation of Copy function for struct field copier direct.
@@ -267,7 +269,7 @@ func (c *structField2FieldCopier) Copy(dst, src reflect.Value) (err error) {
 		src, err = src.FieldByIndexErr(c.srcFieldIndex)
 		if err != nil {
 			// There's no src field to copy from, reset the dst field to zero
-			c.setFieldZero(dst, c.dstFieldIndex)
+			structFieldSetZero(dst, c.dstFieldIndex)
 			return nil //nolint:nilerr
 		}
 	}
@@ -283,7 +285,7 @@ func (c *structField2FieldCopier) Copy(dst, src reflect.Value) (err error) {
 		dst = dst.Field(c.dstFieldIndex[0])
 	} else {
 		// Get dst field with making sure it's settable
-		dst = c.getFieldWithInit(dst, c.dstFieldIndex)
+		dst = structFieldGetWithInit(dst, c.dstFieldIndex)
 	}
 	if c.dstFieldUnexported {
 		if !dst.CanAddr() {
@@ -295,33 +297,20 @@ func (c *structField2FieldCopier) Copy(dst, src reflect.Value) (err error) {
 
 	// Use custom copier if set
 	if c.copier != nil {
-		return c.copier.Copy(dst, src)
-	}
-	// Otherwise, just perform simple direct copying
-	dst.Set(src)
-	return nil
-}
-
-// getFieldWithInit gets deep nested field with init value for pointer ones
-func (c *structField2FieldCopier) getFieldWithInit(field reflect.Value, index []int) reflect.Value {
-	for _, idx := range index {
-		if field.Kind() == reflect.Pointer {
-			if field.IsNil() {
-				field.Set(reflect.New(field.Type().Elem()))
-			}
-			field = field.Elem()
+		if err = c.copier.Copy(dst, src); err != nil {
+			return err
 		}
-		field = field.Field(idx)
+	} else {
+		// Otherwise, just perform simple direct copying
+		dst.Set(src)
 	}
-	return field
-}
 
-// setFieldZero sets zero to a deep nested field
-func (c *structField2FieldCopier) setFieldZero(field reflect.Value, index []int) {
-	field, err := field.FieldByIndexErr(index)
-	if err == nil && field.IsValid() {
-		field.Set(reflect.Zero(field.Type())) // NOTE: Go1.18 has no SetZero
+	// When instructed to set `dst` as `nil` on zero
+	if c.dstFieldSetNilOnZero {
+		nillableValueSetNilOnZero(dst)
 	}
+
+	return nil
 }
 
 // structField2MethodCopier data structure of copier that copies between `fields` and `methods`

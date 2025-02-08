@@ -11,8 +11,9 @@
 - Ability to copy between `pointers` and `values` (for example: copy from `*int` to `int`)
 - Ability to copy struct fields via struct methods
 - Ability to copy inherited fields from embedded structs
+- Ability to set a destination struct field as `nil` if it is `zero`
 - Ability to copy unexported struct fields
-- Ability to configure copying behavior
+- Ability to configure extra copying behaviors
 
 ## Installation
 
@@ -27,8 +28,9 @@ go get github.com/tiendc/go-deepcopy
 - [Skip copying struct fields](#skip-copying-struct-fields)
 - [Copy struct fields via struct methods](#copy-struct-fields-via-struct-methods)
 - [Copy inherited fields from embedded structs](#copy-inherited-fields-from-embedded-structs)
+- [Set destination struct fields as `nil` on `zero`](#set-destination-struct-fields-as-nil-on-zero)
 - [Copy unexported struct fields](#copy-unexported-struct-fields)
-- [Configure copying behavior](#configure-copying-behavior)
+- [Configure extra copying behaviors](#configure-extra-copying-behaviors)
 
 ### First example
 
@@ -199,6 +201,42 @@ to achieve the same result.
     // {I:11 St:xyz}
 ```
 
+### Set destination struct fields as `nil` on `zero`
+
+- This is a new feature from version 2.0. This applies to destination fields of type `pointer`, `interface`,
+`slice`, and `map`. When their values are zero after copying, they will be set as `nil`. This is very
+convenient when you don't want to send something like a date of `0001-01-01` to client, you want to send
+`null` instead.
+
+[Playground 1](https://go.dev/play/p/GO6VExVOLei) /
+[Playground 2](https://go.dev/play/p/u0zMHx9UWjA) /
+[Playground 3](https://go.dev/play/p/ZpA8DkQ9-7f)
+
+```go
+    // Source struct has a time.Time field
+    type S struct {
+        I    int
+        Time time.Time
+    }
+    // Destination field must be a nullable value such as `*time.Time` or `interface{}`
+    type D struct {
+        I    int
+        Time *time.Time `copy:",nilonzero"` // make sure to use this tag
+    }
+
+    src := []S{{I: 1, Time: time.Time{}}, {I: 11, Time: time.Now()}}
+    var dst []D
+    _ = deepcopy.Copy(&dst, &src)
+
+    for _, d := range dst {
+        fmt.Printf("%+v\n", d)
+    }
+
+    // Output:
+    // {I:1 Time:<nil>} (source is a zero time value, destination becomes `nil`)
+    // {I:11 Time:2025-02-08 12:31:11...} (source is not zero, so be the destination)
+```
+
 ### Copy unexported struct fields
 
 - By default, unexported struct fields will be ignored when copy. If you want to copy them, use tag attribute `required`.
@@ -228,7 +266,7 @@ to achieve the same result.
     // {i:11 U:22}
 ```
 
-### Configure copying behavior
+### Configure extra copying behaviors
 
 - Not allow to copy between `ptr` type and `value` (default is `allow`)
 
