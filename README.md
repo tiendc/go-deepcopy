@@ -358,7 +358,7 @@ convenient when you don't want to send something like a date of `0001-01-01` to 
 
 ### Go-DeepCopy vs ManualCopy vs JinzhuCopier vs Deepcopier
 
-This benchmark in done on go-deepcopy v2.0.0.
+This benchmark is done on go-deepcopy v2.0.0.
 
   [Benchmark code](https://gist.github.com/tiendc/0a739fd880b9aac5373de95458d54808)
 
