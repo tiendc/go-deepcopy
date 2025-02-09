@@ -253,8 +253,8 @@ convenient when you don't want to send something like a date of `0001-01-01` to 
         I  int
         St string
     }
-    func (d *D) PostCopy(src any) error { // PostCopy must be defined on struct pointer, not value
-        // s := src.(S)
+    // PostCopy must be defined on struct pointer, not value
+    func (d *D) PostCopy(src any) error {
         d.I *= 2
         d.St += d.St
         return nil
@@ -269,8 +269,8 @@ convenient when you don't want to send something like a date of `0001-01-01` to 
     }
 
     // Output:
-    // {I:11 St:aa}
-    // {I:1111 St:aaaa}
+    // {I:2 St:aa}
+    // {I:22 St:aaaa}
 ```
 
 ### Copy unexported struct fields
