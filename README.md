@@ -168,7 +168,7 @@ func (d *D) CopyX(i int) error {
 
 ### Copy inherited fields from embedded structs
 
-- This is default behaviour from version 1.0, for lower versions, you can use custom copying function
+- This is default behaviour from v1, for lower versions, you can use custom copying function
 to achieve the same result.
 
   [Playground 1](https://go.dev/play/p/Zjj12AMRYXt) /
@@ -204,7 +204,7 @@ to achieve the same result.
 
 ### Set destination struct fields as `nil` on `zero`
 
-- This is a new feature from version 2.0. This applies to destination fields of type `pointer`, `interface`,
+- This is a new feature from v1.5.0. This applies to destination fields of type `pointer`, `interface`,
 `slice`, and `map`. When their values are zero after copying, they will be set as `nil`. This is very
 convenient when you don't want to send something like a date of `0001-01-01` to client, you want to send
 `null` instead.
@@ -240,7 +240,7 @@ convenient when you don't want to send something like a date of `0001-01-01` to 
 
 ### `PostCopy` event method for structs
 
-- This is a new feature from version 2.0. If a destination struct has PostCopy() method, it will be called.
+- This is a new feature from v1.5.0. If a destination struct has PostCopy() method, it will be called after copying.
 
   [Playground](https://go.dev/play/p/fGhGZumaRUD)
 
@@ -358,7 +358,7 @@ convenient when you don't want to send something like a date of `0001-01-01` to 
 
 ### Go-DeepCopy vs ManualCopy vs JinzhuCopier vs Deepcopier
 
-This benchmark is done on go-deepcopy v2.0.0.
+This benchmark is done on go-deepcopy v1.5.0.
 
   [Benchmark code](https://gist.github.com/tiendc/0a739fd880b9aac5373de95458d54808)
 
