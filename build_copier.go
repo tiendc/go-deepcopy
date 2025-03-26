@@ -216,13 +216,13 @@ OnNonCopyable:
 }
 
 func setCachedCopier(ctx *Context, cacheKey *cacheKey, cp copier) {
-	ctx.mu.RLock()
+	ctx.mu.Lock()
 	ctx.copierCacheMap[*cacheKey] = cp
-	ctx.mu.RUnlock()
+	ctx.mu.Unlock()
 }
 
 func deleteCachedCopier(ctx *Context, cacheKey *cacheKey) {
-	ctx.mu.RLock()
+	ctx.mu.Lock()
 	delete(ctx.copierCacheMap, *cacheKey)
-	ctx.mu.RUnlock()
+	ctx.mu.Unlock()
 }
