@@ -379,6 +379,27 @@ BenchmarkCopy/mitchellh/copystructure
 BenchmarkCopy/mitchellh/copystructure-10  101506	     11316 ns/op
 ```
 
+From v1.5.2, copying between same struct type will be faster.
+
+  [Benchmark code](https://gist.github.com/tiendc/e76da8c2279dda518c0edee58d42218a)
+
+```
+BenchmarkCopy/Go-DeepCopy
+BenchmarkCopy/Go-DeepCopy-10         	 4426568	       262.8 ns/op
+BenchmarkCopy/ManualCopy
+BenchmarkCopy/ManualCopy-10          	31910260	        37.87 ns/op
+BenchmarkCopy/JinzhuCopier
+BenchmarkCopy/JinzhuCopier-10        	  166887	      7184 ns/op
+BenchmarkCopy/ulule/deepcopier
+BenchmarkCopy/ulule/deepcopier-10    	   42837	     27889 ns/op
+BenchmarkCopy/mohae/deepcopy
+BenchmarkCopy/mohae/deepcopy-10      	  835534	      1325 ns/op
+BenchmarkCopy/barkimedes/deepcopy
+BenchmarkCopy/barkimedes/deepcopy-10 	  800106	      1485 ns/op
+BenchmarkCopy/mitchellh/copystructure
+BenchmarkCopy/mitchellh/copystructure-10  184207	      6492 ns/op
+```
+
 ## Contributing
 
 - You are welcome to make pull requests for new functions and bug fixes.
