@@ -207,6 +207,43 @@ func Test_Copy_struct(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, DD{I: 1, Ref: &DD{I: 2, Ref: &DD{I: 3}}}, d)
 	})
+
+	t.Run("#12: copy values of same struct", func(t *testing.T) {
+		type SS2 struct {
+			I int
+		}
+		type SS struct {
+			I   int
+			Ref *SS2
+		}
+
+		var s SS = SS{I: 1, Ref: &SS2{I: 2}}
+		var d SS
+		err := Copy(&d, s)
+		assert.Nil(t, err)
+		assert.Equal(t, s, d)
+		// Changes the src, they must become different
+		s.Ref.I++
+		assert.NotEqual(t, s, d)
+	})
+
+	t.Run("#13: copy from derived struct", func(t *testing.T) {
+		type SS2 struct {
+			I int
+		}
+		type SS struct {
+			I   int
+			Ref *SS2
+		}
+		type DD SS
+
+		var s SS = SS{I: 1, Ref: &SS2{I: 2}}
+		var d DD
+		err := Copy(&d, s)
+		assert.Nil(t, err)
+		assert.NotEqual(t, s, d)
+		assert.Equal(t, DD{I: 1, Ref: &SS2{I: 2}}, d)
+	})
 }
 
 func Test_Copy_struct_error(t *testing.T) {
@@ -404,6 +441,7 @@ func Test_Copy_struct_unexported_error(t *testing.T) {
 		type DD struct {
 			I int
 			u uint `copy:",required"`
+			S string
 		}
 
 		var s SS = SS{I: 1, u: 2}

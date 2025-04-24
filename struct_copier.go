@@ -14,13 +14,29 @@ var (
 
 // structCopier data structure of copier that copies from a `struct`
 type structCopier struct {
-	ctx            *Context
+	ctx *Context
+	// isAssignable true means we can assign `src` to `dst` directly
+	isAssignable bool
+	// isConvertible true means we can assign `src` to `dst` with a built-in supported conversion
+	isConvertible  bool
 	fieldCopiers   []copier
 	postCopyMethod *int
 }
 
 // Copy implementation of Copy function for struct copier
 func (c *structCopier) Copy(dst, src reflect.Value) error {
+	// Performs direct struct copy if `dst` and `src` have the same type or be convertible
+	if c.isConvertible {
+		if c.isAssignable {
+			dst.Set(src)
+		} else {
+			// NOTE: Go docs recommend calling CanConvert() in order to make sure
+			// Convert() won't panic. But, Convert() may only panic when convert from `Slice` to
+			// `Array or Array Ptr`. In here, `dst` and `src` are structs.
+			dst.Set(src.Convert(dst.Type()))
+		}
+	}
+	// Performs copying from fields to fields/methods
 	for _, cp := range c.fieldCopiers {
 		if err := cp.Copy(dst, src); err != nil {
 			return err
@@ -44,6 +60,9 @@ func (c *structCopier) Copy(dst, src reflect.Value) error {
 
 //nolint:gocognit,gocyclo
 func (c *structCopier) init(dstType, srcType reflect.Type) (err error) {
+	c.isAssignable = srcType.AssignableTo(dstType)
+	c.isConvertible = c.isAssignable || srcType.ConvertibleTo(dstType)
+
 	dstCopyingMethods := c.parseStructMethods(dstType)
 	dstDirectFields, mapDstDirectFields, dstInheritedFields, mapDstInheritedFields := c.parseAllFields(dstType)
 	srcDirectFields, mapSrcDirectFields, srcInheritedFields, mapSrcInheritedFields := c.parseAllFields(srcType)
@@ -88,11 +107,21 @@ func (c *structCopier) init(dstType, srcType reflect.Type) (err error) {
 			continue
 		}
 
+		// Not require copying configured and the src field is unexported, just skip
+		if !sfDetail.required && !dfDetail.required && !sfDetail.field.IsExported() {
+			sfDetail.markDone()
+			dfDetail.markDone()
+			continue
+		}
+
 		copier, err := c.buildCopier(dstType, srcType, dfDetail, sfDetail)
 		if err != nil {
 			return err
 		}
-		c.fieldCopiers = append(c.fieldCopiers, copier)
+		if copier != nil {
+			c.fieldCopiers = append(c.fieldCopiers, copier)
+		}
+
 		dfDetail.markDone()
 		sfDetail.markDone()
 	}
@@ -222,6 +251,11 @@ func (c *structCopier) buildCopier(
 
 	// OPTIMIZATION: buildCopier() can handle this nicely
 	if simpleKindMask&(1<<sf.Type.Kind()) > 0 {
+		// NOTE: When src is copied with direct assignment, we can ignore fields of primitive types
+		// as they are always copied correctly.
+		if c.isConvertible {
+			return nil, nil
+		}
 		if sf.Type == df.Type {
 			// NOTE: pass nil to unset custom copier and trigger direct copying.
 			// We can pass `&directCopier{}` for the same result (but it's a bit slower).
