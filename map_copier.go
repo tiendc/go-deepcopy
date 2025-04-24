@@ -17,9 +17,7 @@ func (c *mapCopier) Copy(dst, src reflect.Value) (err error) {
 		dst.Set(reflect.Zero(dst.Type())) // NOTE: Go1.18 has no SetZero
 		return nil
 	}
-	if dst.IsNil() {
-		dst.Set(reflect.MakeMapWithSize(dst.Type(), src.Len()))
-	}
+	dst.Set(reflect.MakeMapWithSize(dst.Type(), src.Len()))
 	iter := src.MapRange()
 	for iter.Next() {
 		k := iter.Key()

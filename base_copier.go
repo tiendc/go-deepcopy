@@ -28,9 +28,7 @@ type value2PtrCopier struct {
 
 // Copy implementation of Copy function for value-to-pointer copier
 func (c *value2PtrCopier) Copy(dst, src reflect.Value) error {
-	if dst.IsNil() {
-		dst.Set(reflect.New(dst.Type().Elem()))
-	}
+	dst.Set(reflect.New(dst.Type().Elem()))
 	dst = dst.Elem()
 	return c.copier.Copy(dst, src)
 }
@@ -74,9 +72,8 @@ func (c *ptr2PtrCopier) Copy(dst, src reflect.Value) error {
 		dst.Set(reflect.Zero(dst.Type())) // NOTE: Go1.18 has no SetZero
 		return nil
 	}
-	if dst.IsNil() {
-		dst.Set(reflect.New(dst.Type().Elem()))
-	}
+
+	dst.Set(reflect.New(dst.Type().Elem()))
 	dst = dst.Elem()
 	return c.copier.Copy(dst, src)
 }
