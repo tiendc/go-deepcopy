@@ -234,6 +234,10 @@ func (c *structCopier) buildCopier(
 
 	cp, err := buildCopier(c.ctx, df.Type, sf.Type)
 	if err != nil {
+		// NOTE: If the copy is not required and the field is unexported, ignore the error
+		if !dstFieldDetail.required && !srcFieldDetail.required && !sf.IsExported() {
+			return defaultNopCopier, nil
+		}
 		return nil, err
 	}
 	if c.ctx.IgnoreNonCopyableTypes && (srcFieldDetail.required || dstFieldDetail.required) {
@@ -256,6 +260,7 @@ func (c *structCopier) createField2MethodCopier(dM *reflect.Method, sfDetail *fi
 		dstMethodUnexported: !dM.IsExported(),
 		srcFieldIndex:       sfDetail.index,
 		srcFieldUnexported:  !sfDetail.field.IsExported(),
+		required:            sfDetail.required,
 	}
 }
 
@@ -267,6 +272,7 @@ func (c *structCopier) createField2FieldCopier(df, sf *fieldDetail, cp copier) c
 		dstFieldSetNilOnZero: df.nilOnZero,
 		srcFieldIndex:        sf.index,
 		srcFieldUnexported:   !sf.field.IsExported(),
+		required:             sf.required || df.required,
 	}
 }
 
@@ -279,6 +285,7 @@ type structField2FieldCopier struct {
 	dstFieldSetNilOnZero bool
 	srcFieldIndex        []int
 	srcFieldUnexported   bool
+	required             bool
 }
 
 // Copy implementation of Copy function for struct field copier direct.
@@ -298,8 +305,11 @@ func (c *structField2FieldCopier) Copy(dst, src reflect.Value) (err error) {
 	}
 	if c.srcFieldUnexported {
 		if !src.CanAddr() {
-			return fmt.Errorf("%w: accessing unexported field requires it to be addressable",
-				ErrValueUnaddressable)
+			if c.required {
+				return fmt.Errorf("%w: accessing unexported source field requires it to be addressable",
+					ErrValueUnaddressable)
+			}
+			return nil
 		}
 		src = reflect.NewAt(src.Type(), unsafe.Pointer(src.UnsafeAddr())).Elem() //nolint:gosec
 	}
@@ -312,8 +322,11 @@ func (c *structField2FieldCopier) Copy(dst, src reflect.Value) (err error) {
 	}
 	if c.dstFieldUnexported {
 		if !dst.CanAddr() {
-			return fmt.Errorf("%w: accessing unexported field requires it to be addressable",
-				ErrValueUnaddressable)
+			if c.required {
+				return fmt.Errorf("%w: accessing unexported destination field requires it to be addressable",
+					ErrValueUnaddressable)
+			}
+			return nil
 		}
 		dst = reflect.NewAt(dst.Type(), unsafe.Pointer(dst.UnsafeAddr())).Elem() //nolint:gosec
 	}
@@ -342,6 +355,7 @@ type structField2MethodCopier struct {
 	dstMethodUnexported bool
 	srcFieldIndex       []int
 	srcFieldUnexported  bool
+	required            bool
 }
 
 // Copy implementation of Copy function for struct field copier between `fields` and `methods`.
@@ -359,8 +373,11 @@ func (c *structField2MethodCopier) Copy(dst, src reflect.Value) (err error) {
 	}
 	if c.srcFieldUnexported {
 		if !src.CanAddr() {
-			return fmt.Errorf("%w: accessing unexported field requires it to be addressable",
-				ErrValueUnaddressable)
+			if c.required {
+				return fmt.Errorf("%w: accessing unexported source field requires it to be addressable",
+					ErrValueUnaddressable)
+			}
+			return nil
 		}
 		src = reflect.NewAt(src.Type(), unsafe.Pointer(src.UnsafeAddr())).Elem() //nolint:gosec
 	}
