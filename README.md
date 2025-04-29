@@ -58,8 +58,8 @@ go get github.com/tiendc/go-deepcopy
     }
     src := []S{{I: 1, U: 2, St: "3", V: SS{B: true}}, {I: 11, U: 22, St: "33", V: SS{B: false}}}
     var dst []D
-    _ = deepcopy.Copy(&dst, &src)
-
+    _ = deepcopy.Copy(&dst, &src) // NOTE: it is recommended that you always pass address of `src` to the function
+                                  // when copy structs having unexported fields such as `time.Time`.
     for _, d := range dst {
         fmt.Printf("%+v\n", d)
     }
