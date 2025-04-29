@@ -272,7 +272,7 @@ func (c *structCopier) createField2FieldCopier(df, sf *fieldDetail, cp copier) c
 		dstFieldSetNilOnZero: df.nilOnZero,
 		srcFieldIndex:        sf.index,
 		srcFieldUnexported:   !sf.field.IsExported(),
-		required:             sf.required || df.required,
+		required:             sf.required || df.required || df.field.IsExported(),
 	}
 }
 
