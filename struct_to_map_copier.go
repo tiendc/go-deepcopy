@@ -57,7 +57,7 @@ func (c *structToMapCopier) init(dstType, srcType reflect.Type) (err error) {
 			ErrTypeNonCopyable, srcType, mapKeyType, mapValType)
 	}
 
-	dstCopyingMethods := structParseMethods(c.ctx, dstType)
+	dstCopyingMethods := typeParseMethods(c.ctx, dstType)
 	if postCopyMethod, ok := dstCopyingMethods[structPostCopyMethodName]; ok {
 		c.postCopyMethod = &postCopyMethod.Index
 	}
