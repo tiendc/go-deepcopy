@@ -7,11 +7,6 @@ import (
 	"unsafe"
 )
 
-var (
-	errType   = reflect.TypeOf((*error)(nil)).Elem()
-	ifaceType = reflect.TypeOf((*any)(nil)).Elem()
-)
-
 // structCopier data structure of copier that copies from a `struct`
 type structCopier struct {
 	ctx            *Context
@@ -44,9 +39,13 @@ func (c *structCopier) Copy(dst, src reflect.Value) error {
 
 //nolint:gocognit,gocyclo
 func (c *structCopier) init(dstType, srcType reflect.Type) (err error) {
-	dstCopyingMethods := c.parseStructMethods(dstType)
-	dstDirectFields, mapDstDirectFields, dstInheritedFields, mapDstInheritedFields := c.parseAllFields(dstType)
-	srcDirectFields, mapSrcDirectFields, srcInheritedFields, mapSrcInheritedFields := c.parseAllFields(srcType)
+	dstCopyingMethods := structParseMethods(c.ctx, dstType)
+	if postCopyMethod, ok := dstCopyingMethods[structPostCopyMethodName]; ok {
+		c.postCopyMethod = &postCopyMethod.Index
+	}
+
+	dstDirectFields, mapDstDirectFields, dstInheritedFields, mapDstInheritedFields := structParseAllFields(dstType)
+	srcDirectFields, mapSrcDirectFields, srcInheritedFields, mapSrcInheritedFields := structParseAllFields(srcType)
 	c.fieldCopiers = make([]copier, 0, len(dstDirectFields)+len(dstInheritedFields))
 
 	for _, key := range append(srcDirectFields, srcInheritedFields...) {
@@ -114,106 +113,6 @@ func (c *structCopier) init(dstType, srcType reflect.Type) (err error) {
 	return nil
 }
 
-// parseStructMethods collects all copying methods from the given struct type
-func (c *structCopier) parseStructMethods(structType reflect.Type) map[string]*reflect.Method {
-	ptrType := reflect.PointerTo(structType)
-	numMethods := ptrType.NumMethod()
-	result := make(map[string]*reflect.Method, numMethods)
-	for i := 0; i < numMethods; i++ {
-		method := ptrType.Method(i)
-		switch {
-		// Field copying method name must be something like `Copy<something>`
-		case c.ctx.CopyBetweenStructFieldAndMethod && strings.HasPrefix(method.Name, "Copy"):
-			if method.Type.NumIn() != 2 || method.Type.NumOut() != 1 {
-				continue
-			}
-			if method.Type.Out(0) != errType {
-				continue
-			}
-			result[method.Name] = &method
-
-		// The method is for `post-copy` event
-		case method.Name == "PostCopy":
-			if method.Type.NumIn() != 2 || method.Type.NumOut() != 1 {
-				continue
-			}
-			if method.Type.In(1) != ifaceType {
-				continue
-			}
-			if method.Type.Out(0) != errType {
-				continue
-			}
-			c.postCopyMethod = &method.Index
-		}
-	}
-	return result
-}
-
-// parseAllFields parses all fields of a struct including direct fields and fields inherited from embedded structs
-func (c *structCopier) parseAllFields(typ reflect.Type) (
-	directFieldKeys []string,
-	mapDirectFields map[string]*fieldDetail,
-	inheritedFieldKeys []string,
-	mapInheritedFields map[string]*fieldDetail,
-) {
-	numFields := typ.NumField()
-	directFieldKeys = make([]string, 0, numFields)
-	mapDirectFields = make(map[string]*fieldDetail, numFields)
-	inheritedFieldKeys = make([]string, 0, numFields)
-	mapInheritedFields = make(map[string]*fieldDetail, numFields)
-
-	for i := 0; i < numFields; i++ {
-		sf := typ.Field(i)
-		fDetail := &fieldDetail{field: &sf, index: []int{i}}
-		parseTag(fDetail)
-		if fDetail.ignored {
-			continue
-		}
-		directFieldKeys = append(directFieldKeys, fDetail.key)
-		mapDirectFields[fDetail.key] = fDetail
-
-		// Parse embedded struct to get its fields
-		if sf.Anonymous {
-			for key, detail := range c.parseAllNestedFields(sf.Type, fDetail.index) {
-				inheritedFieldKeys = append(inheritedFieldKeys, key)
-				mapInheritedFields[key] = detail
-				fDetail.nestedFields = append(fDetail.nestedFields, detail)
-			}
-		}
-	}
-	return directFieldKeys, mapDirectFields, inheritedFieldKeys, mapInheritedFields
-}
-
-// parseAllNestedFields parses all fields with initial index of starting field
-func (c *structCopier) parseAllNestedFields(typ reflect.Type, index []int) map[string]*fieldDetail {
-	if typ.Kind() == reflect.Pointer {
-		typ = typ.Elem()
-	}
-	if typ.Kind() != reflect.Struct {
-		return nil
-	}
-	numFields := typ.NumField()
-	result := make(map[string]*fieldDetail, numFields)
-
-	for i := 0; i < numFields; i++ {
-		sf := typ.Field(i)
-		fDetail := &fieldDetail{field: &sf, index: append(index, i)}
-		parseTag(fDetail)
-		if fDetail.ignored {
-			continue
-		}
-		result[fDetail.key] = fDetail
-		// Parse embedded struct recursively to get its fields
-		if sf.Anonymous {
-			for key, detail := range c.parseAllNestedFields(sf.Type, fDetail.index) {
-				result[key] = detail
-				fDetail.nestedFields = append(fDetail.nestedFields, detail)
-			}
-		}
-	}
-	return result
-}
-
 func (c *structCopier) buildCopier(
 	dstStructType, srcStructType reflect.Type,
 	dstFieldDetail, srcFieldDetail *fieldDetail,
@@ -276,7 +175,7 @@ func (c *structCopier) createField2FieldCopier(df, sf *fieldDetail, cp copier) c
 	}
 }
 
-// structFieldDirectCopier data structure of copier that copies from
+// structField2FieldCopier data structure of copier that copies from
 // a src field to a dst field directly
 type structField2FieldCopier struct {
 	copier               copier

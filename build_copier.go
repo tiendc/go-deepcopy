@@ -168,25 +168,31 @@ func buildCopier(ctx *Context, dstType, srcType reflect.Type) (copier copier, er
 		goto OnComplete
 	}
 
+	//nolint:nestif
 	if srcKind == reflect.Struct {
-		if dstKind != reflect.Struct {
-			goto OnNonCopyable
-		}
-		// At this point, cachedCopier is `nil`.
-		// Seems like a circular reference, use inline copier.
-		if cachedCopierFound {
-			return &inlineCopier{ctx: ctx, dstType: dstType, srcType: srcType}, nil
-		}
-		// Circular reference can happen via struct field reference.
-		// Put a `nil` copier to the cache to mark that the copier building for the struct types is in-progress.
-		setCachedCopier(ctx, cacheKey, nil)
+		if dstKind == reflect.Struct || dstKind == reflect.Map {
+			// At this point, cachedCopier should be `nil`.
+			// If it's non-nil, seems like a circular reference occurs, use an inline copier.
+			if cachedCopierFound {
+				return &inlineCopier{ctx: ctx, dstType: dstType, srcType: srcType}, nil
+			}
+			// Circular reference can happen via struct field reference.
+			// Put a `nil` copier to the cache to mark that the copier building for the struct types is in-progress.
+			setCachedCopier(ctx, cacheKey, nil)
 
-		cp := &structCopier{ctx: ctx}
-		copier, err = cp, cp.init(dstType, srcType)
-		if err != nil {
-			deleteCachedCopier(ctx, cacheKey)
+			if dstKind == reflect.Struct {
+				cp := &structCopier{ctx: ctx}
+				copier, err = cp, cp.init(dstType, srcType)
+			} else {
+				cp := &structToMapCopier{ctx: ctx}
+				copier, err = cp, cp.init(dstType, srcType)
+			}
+			if err != nil {
+				deleteCachedCopier(ctx, cacheKey)
+			}
+			goto OnComplete
 		}
-		goto OnComplete
+		goto OnNonCopyable
 	}
 
 	if srcKind == reflect.Map {
