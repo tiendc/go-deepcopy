@@ -39,7 +39,7 @@ func (c *structCopier) Copy(dst, src reflect.Value) error {
 
 //nolint:gocognit,gocyclo
 func (c *structCopier) init(dstType, srcType reflect.Type) (err error) {
-	dstCopyingMethods := structParseMethods(c.ctx, dstType)
+	dstCopyingMethods := typeParseMethods(c.ctx, dstType)
 	if postCopyMethod, ok := dstCopyingMethods[structPostCopyMethodName]; ok {
 		c.postCopyMethod = &postCopyMethod.Index
 	}

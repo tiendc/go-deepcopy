@@ -15,9 +15,9 @@ const (
 	structPostCopyMethodName = "PostCopy"
 )
 
-// structParseMethods collects all copying methods from the given struct type
-func structParseMethods(ctx *Context, structType reflect.Type) map[string]*reflect.Method {
-	ptrType := reflect.PointerTo(structType)
+// typeParseMethods collects all copying methods from the given type
+func typeParseMethods(ctx *Context, typ reflect.Type) map[string]*reflect.Method {
+	ptrType := reflect.PointerTo(typ)
 	numMethods := ptrType.NumMethod()
 	result := make(map[string]*reflect.Method, numMethods)
 	for i := 0; i < numMethods; i++ {
