@@ -9,7 +9,7 @@
 - Ability to copy almost all Go types (number, string, bool, function, slice, map, struct)
 - Ability to copy data between convertible types (for example: copy from `int` to `float`)
 - Ability to copy between `pointers` and `values` (for example: copy from `*int` to `int`)
-- Ability to copy struct fields via struct methods
+- Ability to copy values via copying methods of destination types
 - Ability to copy inherited fields from embedded structs
 - Ability to set a destination struct field as `nil` if it is `zero`
 - Ability to copy unexported struct fields

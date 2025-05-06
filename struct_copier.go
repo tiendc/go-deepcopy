@@ -21,7 +21,7 @@ func (c *structCopier) Copy(dst, src reflect.Value) error {
 			return err
 		}
 	}
-	// Executes post-copy function on the struct values
+	// Executes post-copy function of the destination struct
 	if c.postCopyMethod != nil {
 		dst = dst.Addr().Method(*c.postCopyMethod)
 		errVal := dst.Call([]reflect.Value{src})[0]
@@ -29,7 +29,7 @@ func (c *structCopier) Copy(dst, src reflect.Value) error {
 			return nil
 		}
 		err, ok := errVal.Interface().(error)
-		if !ok { // Should never get here
+		if !ok { // Should never get in here
 			return fmt.Errorf("%w: PostCopy method returns non-error value", ErrTypeInvalid)
 		}
 		return err
@@ -39,8 +39,8 @@ func (c *structCopier) Copy(dst, src reflect.Value) error {
 
 //nolint:gocognit,gocyclo
 func (c *structCopier) init(dstType, srcType reflect.Type) (err error) {
-	dstCopyingMethods := typeParseMethods(c.ctx, dstType)
-	if postCopyMethod, ok := dstCopyingMethods[structPostCopyMethodName]; ok {
+	dstCopyingMethods, postCopyMethod := typeParseMethods(c.ctx, dstType)
+	if postCopyMethod != nil {
 		c.postCopyMethod = &postCopyMethod.Index
 	}
 
