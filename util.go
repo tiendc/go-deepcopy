@@ -12,29 +12,30 @@ var (
 )
 
 const (
-	structPostCopyMethodName = "PostCopy"
+	typeMethodPostCopy = "PostCopy"
 )
 
 // typeParseMethods collects all copying methods from the given type
-func typeParseMethods(ctx *Context, typ reflect.Type) map[string]*reflect.Method {
+func typeParseMethods(ctx *Context, typ reflect.Type) (
+	copyingMethods map[string]*reflect.Method, postCopyMethod *reflect.Method) {
 	ptrType := reflect.PointerTo(typ)
 	numMethods := ptrType.NumMethod()
-	result := make(map[string]*reflect.Method, numMethods)
+	copyingMethods = make(map[string]*reflect.Method, numMethods)
 	for i := 0; i < numMethods; i++ {
 		method := ptrType.Method(i)
 		switch {
 		// Field copying method name must be something like `Copy<something>`
-		case ctx.CopyBetweenStructFieldAndMethod && strings.HasPrefix(method.Name, "Copy"):
+		case ctx.CopyViaCopyingMethod && strings.HasPrefix(method.Name, "Copy"):
 			if method.Type.NumIn() != 2 || method.Type.NumOut() != 1 {
 				continue
 			}
 			if method.Type.Out(0) != errType {
 				continue
 			}
-			result[method.Name] = &method
+			copyingMethods[method.Name] = &method
 
 		// The method is for `post-copy` event
-		case method.Name == structPostCopyMethodName:
+		case method.Name == typeMethodPostCopy:
 			if method.Type.NumIn() != 2 || method.Type.NumOut() != 1 {
 				continue
 			}
@@ -44,10 +45,13 @@ func typeParseMethods(ctx *Context, typ reflect.Type) map[string]*reflect.Method
 			if method.Type.Out(0) != errType {
 				continue
 			}
-			result[method.Name] = &method
+			postCopyMethod = &method
 		}
 	}
-	return result
+	if len(copyingMethods) == 0 {
+		copyingMethods = nil
+	}
+	return copyingMethods, postCopyMethod
 }
 
 // structParseAllFields parses all fields of a struct including direct fields and fields inherited from embedded structs
