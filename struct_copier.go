@@ -134,7 +134,7 @@ func (c *structCopier) buildCopier(
 	cp, err := buildCopier(c.ctx, df.Type, sf.Type)
 	if err != nil {
 		// NOTE: If the copy is not required and the field is unexported, ignore the error
-		if !dstFieldDetail.required && !srcFieldDetail.required && !sf.IsExported() {
+		if !dstFieldDetail.required && !srcFieldDetail.required && !df.IsExported() {
 			return defaultNopCopier, nil
 		}
 		return nil, err
@@ -155,11 +155,10 @@ func (c *structCopier) buildCopier(
 
 func (c *structCopier) createField2MethodCopier(dM *reflect.Method, sfDetail *fieldDetail) copier {
 	return &structField2MethodCopier{
-		dstMethod:           dM.Index,
-		dstMethodUnexported: !dM.IsExported(),
-		srcFieldIndex:       sfDetail.index,
-		srcFieldUnexported:  !sfDetail.field.IsExported(),
-		required:            sfDetail.required,
+		dstMethod:          dM.Index,
+		srcFieldIndex:      sfDetail.index,
+		srcFieldUnexported: !sfDetail.field.IsExported(),
+		required:           sfDetail.required || sfDetail.field.IsExported(),
 	}
 }
 
@@ -220,20 +219,17 @@ func (c *structField2FieldCopier) Copy(dst, src reflect.Value) (err error) {
 		dst = structFieldGetWithInit(dst, c.dstFieldIndex)
 	}
 	if c.dstFieldUnexported {
-		if !dst.CanAddr() {
-			if c.required {
-				return fmt.Errorf("%w: accessing unexported destination field requires it to be addressable",
-					ErrValueUnaddressable)
-			}
-			return nil
-		}
+		// NOTE: dst is always addressable as Copy() requires `dst` to be pointer
 		dst = reflect.NewAt(dst.Type(), unsafe.Pointer(dst.UnsafeAddr())).Elem() //nolint:gosec
 	}
 
 	// Use custom copier if set
 	if c.copier != nil {
 		if err = c.copier.Copy(dst, src); err != nil {
-			return err
+			if c.required {
+				return err
+			}
+			return nil
 		}
 	} else {
 		// Otherwise, just perform simple direct copying
@@ -250,11 +246,10 @@ func (c *structField2FieldCopier) Copy(dst, src reflect.Value) (err error) {
 
 // structField2MethodCopier data structure of copier that copies between `fields` and `methods`
 type structField2MethodCopier struct {
-	dstMethod           int
-	dstMethodUnexported bool
-	srcFieldIndex       []int
-	srcFieldUnexported  bool
-	required            bool
+	dstMethod          int
+	srcFieldIndex      []int
+	srcFieldUnexported bool
+	required           bool
 }
 
 // Copy implementation of Copy function for struct field copier between `fields` and `methods`.
@@ -282,10 +277,6 @@ func (c *structField2MethodCopier) Copy(dst, src reflect.Value) (err error) {
 	}
 
 	dst = dst.Addr().Method(c.dstMethod)
-	if c.dstMethodUnexported {
-		dst = reflect.NewAt(dst.Type(), unsafe.Pointer(dst.UnsafeAddr())).Elem() //nolint:gosec
-	}
-
 	errVal := dst.Call([]reflect.Value{src})[0]
 	if errVal.IsNil() {
 		return nil

@@ -270,6 +270,17 @@ func Test_Copy_structToMap_error(t *testing.T) {
 		err := Copy(&d, &s)
 		assert.ErrorIs(t, err, ErrTypeNonCopyable)
 	})
+
+	t.Run("#5: non-copyable, but field requires copying", func(t *testing.T) {
+		type SS struct {
+			P unsafe.Pointer `copy:",required"`
+		}
+
+		s := SS{P: nil}
+		var d map[string]unsafe.Pointer
+		err := Copy(&d, &s, IgnoreNonCopyableTypes(true))
+		assert.ErrorIs(t, err, ErrFieldRequireCopying)
+	})
 }
 
 func Test_Copy_structToMap_unexported(t *testing.T) {

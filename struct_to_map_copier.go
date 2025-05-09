@@ -144,11 +144,10 @@ func (c *structToMapCopier) buildCopier(mapKeyType, mapValueType, srcStructType 
 
 func (c *structToMapCopier) createField2MethodCopier(dM *reflect.Method, sfDetail *fieldDetail) copier {
 	return &structField2MethodCopier{
-		dstMethod:           dM.Index,
-		dstMethodUnexported: !dM.IsExported(),
-		srcFieldIndex:       sfDetail.index,
-		srcFieldUnexported:  !sfDetail.field.IsExported(),
-		required:            sfDetail.required,
+		dstMethod:          dM.Index,
+		srcFieldIndex:      sfDetail.index,
+		srcFieldUnexported: !sfDetail.field.IsExported(),
+		required:           sfDetail.required || sfDetail.field.IsExported(),
 	}
 }
 
@@ -159,7 +158,7 @@ func (c *structToMapCopier) createField2MapEntryCopier(sf *fieldDetail, key refl
 		valueCopier:        valueCopier,
 		srcFieldIndex:      sf.index,
 		srcFieldUnexported: !sf.field.IsExported(),
-		required:           sf.required,
+		required:           sf.required || sf.field.IsExported(),
 	}
 }
 
@@ -200,7 +199,10 @@ func (c *structField2MapEntryCopier) Copy(dst, src reflect.Value) (err error) {
 
 	if c.valueCopier != nil {
 		if src, err = c.valueCopier.Copy(src); err != nil {
-			return err
+			if c.required {
+				return err
+			}
+			return nil
 		}
 	}
 	dst.SetMapIndex(c.key, src)
