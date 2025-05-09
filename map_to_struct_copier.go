@@ -218,20 +218,17 @@ func (c *value2StructFieldCopier) Copy(dst, src reflect.Value) (err error) {
 		dst = structFieldGetWithInit(dst, c.dstFieldIndex)
 	}
 	if c.dstFieldUnexported {
-		if !dst.CanAddr() {
-			if c.required {
-				return fmt.Errorf("%w: accessing unexported destination field requires it to be addressable",
-					ErrValueUnaddressable)
-			}
-			return nil
-		}
+		// NOTE: dst is always addressable as Copy() requires `dst` to be pointer
 		dst = reflect.NewAt(dst.Type(), unsafe.Pointer(dst.UnsafeAddr())).Elem() //nolint:gosec
 	}
 
 	// Use custom copier if set
 	if c.copier != nil {
 		if err = c.copier.Copy(dst, src); err != nil {
-			return err
+			if c.required {
+				return err
+			}
+			return nil
 		}
 	} else {
 		// Otherwise, just perform simple direct copying
