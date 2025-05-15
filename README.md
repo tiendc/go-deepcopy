@@ -31,6 +31,7 @@ go get github.com/tiendc/go-deepcopy
 - [Set destination struct fields as `nil` on `zero`](#set-destination-struct-fields-as-nil-on-zero)
 - [PostCopy event method for structs](#postcopy-event-method-for-structs)
 - [Copy unexported struct fields](#copy-unexported-struct-fields)
+- [Copy between structs and maps](#copy-between-structs-and-maps)
 - [Configure extra copying behaviors](#configure-extra-copying-behaviors)
 
 ### First example
@@ -302,6 +303,37 @@ convenient when you don't want to send something like a date of `0001-01-01` to 
     // {i:11 U:22}
 ```
 
+### Copy between structs and maps
+
+  [Playground](https://go.dev/play/p/eS8RWB8dKmL)
+
+```go
+    type D struct {
+        I int  `copy:"i"`
+        U uint `copy:"u"`
+    }
+
+    src := map[string]any{"i": 1, "u": 2, "s": "abc"}
+    var dst D
+    err := deepcopy.Copy(&dst, &src)
+    if err != nil {
+        fmt.Println("error:", err)
+    }
+    fmt.Printf("Result struct: %+v\n", dst)
+
+    src2 := D{I: 11, U: 22}
+    dst2 := map[string]any{}
+    err = deepcopy.Copy(&dst2, &src2)
+    if err != nil {
+        fmt.Println("error:", err)
+    }
+    fmt.Printf("Result map: %+v\n", dst2)
+
+    // Output:
+    // Result struct: {I:1 U:2}
+    // Result map: map[i:11 u:22]
+```
+
 ### Configure extra copying behaviors
 
 - Not allow to copy between `ptr` type and `value` (default is `allow`)
@@ -356,28 +388,27 @@ convenient when you don't want to send something like a date of `0001-01-01` to 
 
 ## Benchmarks
 
-### Go-DeepCopy vs ManualCopy vs JinzhuCopier vs Deepcopier
+### Go-DeepCopy vs ManualCopy vs Other Libs
 
 This benchmark is done on go-deepcopy v1.6.0.
 
   [Benchmark code](https://gist.github.com/tiendc/0a739fd880b9aac5373de95458d54808)
 
 ```
-BenchmarkCopy
-BenchmarkCopy/Go-DeepCopy
-BenchmarkCopy/Go-DeepCopy-10             1685755               706.5 ns/op           344 B/op          4 allocs/op
-BenchmarkCopy/ManualCopy
-BenchmarkCopy/ManualCopy-10             28962333                41.10 ns/op           80 B/op          1 allocs/op
-BenchmarkCopy/JinzhuCopier
-BenchmarkCopy/JinzhuCopier-10             135469              8947 ns/op            1296 B/op         88 allocs/op
-BenchmarkCopy/ulule/deepcopier
-BenchmarkCopy/ulule/deepcopier-10          40062             29720 ns/op           52480 B/op        766 allocs/op
-BenchmarkCopy/mohae/deepcopy
-BenchmarkCopy/mohae/deepcopy-10           505458              2194 ns/op            1512 B/op         72 allocs/op
-BenchmarkCopy/barkimedes/deepcopy
-BenchmarkCopy/barkimedes/deepcopy-10      511608              2380 ns/op            1704 B/op         45 allocs/op
-BenchmarkCopy/mitchellh/copystructure
-BenchmarkCopy/mitchellh/copystructure-10  104089             11430 ns/op            8136 B/op        251 allocs/op
+Go-DeepCopy
+Go-DeepCopy-10             1685755               706.5 ns/op           344 B/op          4 allocs/op
+ManualCopy
+ManualCopy-10             28962333                41.10 ns/op           80 B/op          1 allocs/op
+JinzhuCopier
+JinzhuCopier-10             135469              8947 ns/op            1296 B/op         88 allocs/op
+ulule/deepcopier
+ulule/deepcopier-10          40062             29720 ns/op           52480 B/op        766 allocs/op
+mohae/deepcopy
+mohae/deepcopy-10           505458              2194 ns/op            1512 B/op         72 allocs/op
+barkimedes/deepcopy
+barkimedes/deepcopy-10      511608              2380 ns/op            1704 B/op         45 allocs/op
+mitchellh/copystructure
+mitchellh/copystructure-10  104089             11430 ns/op            8136 B/op        251 allocs/op
 ```
 
 ## Contributing
