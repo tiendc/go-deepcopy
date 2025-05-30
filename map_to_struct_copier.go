@@ -9,11 +9,11 @@ import (
 
 // mapToStructCopier data structure of copier that copies a map to a struct
 type mapToStructCopier struct {
-	ctx                         *Context
-	mapDstCopyingMethod         map[string]*reflect.Method
-	mapDstStructFields          map[string]*simpleFieldDetail
-	dstStructHasRequiredCopying bool
-	postCopyMethod              *int
+	ctx                     *Context
+	mapDstCopyingMethod     map[string]*reflect.Method
+	mapDstStructFields      map[string]*simpleFieldDetail
+	dstStructRequiredFields int
+	postCopyMethod          *int
 }
 
 type simpleFieldDetail struct {
@@ -35,13 +35,9 @@ func (c *mapToStructCopier) Copy(dstStruct, srcMap reflect.Value) error {
 
 	dstStructType := dstStruct.Type()
 	// Marks all fields of the dst struct which require copying
-	mapRequiredFields := make(map[string]bool, len(c.mapDstStructFields))
-	if c.dstStructHasRequiredCopying {
-		for k, v := range c.mapDstStructFields {
-			if v.required {
-				mapRequiredFields[k] = false
-			}
-		}
+	var mapCopiedKeys map[string]struct{}
+	if c.dstStructRequiredFields > 0 {
+		mapCopiedKeys = make(map[string]struct{}, c.dstStructRequiredFields)
 	}
 
 	// Copies map entries to struct fields
@@ -74,10 +70,6 @@ func (c *mapToStructCopier) Copy(dstStruct, srcMap reflect.Value) error {
 		if dfDetail == nil {
 			continue
 		}
-		// Adds a mark to the list of required copying
-		if !dfDetail.fieldUnexported {
-			mapRequiredFields[dfDetail.key] = false
-		}
 
 		entryCopier, err := c.buildCopier(dstStructType, srcValType, dfDetail)
 		if err != nil {
@@ -89,14 +81,21 @@ func (c *mapToStructCopier) Copy(dstStruct, srcMap reflect.Value) error {
 		}
 
 		// Marks the field as copied
-		mapRequiredFields[dfDetail.key] = true
+		if dfDetail.required {
+			mapCopiedKeys[dfDetail.key] = struct{}{}
+		}
 	}
 
 	// Checks if any dst field requires copying
-	for key, copied := range mapRequiredFields {
-		if !copied {
-			return fmt.Errorf("%w: struct field '%v[%s]' requires copying",
-				ErrFieldRequireCopying, dstStructType, key)
+	if c.dstStructRequiredFields > 0 {
+		for _, v := range c.mapDstStructFields {
+			if !v.required {
+				continue
+			}
+			if _, exists := mapCopiedKeys[v.key]; !exists {
+				return fmt.Errorf("%w: struct field '%v[%s]' requires copying",
+					ErrFieldRequireCopying, dstStructType, v.key)
+			}
 		}
 	}
 
@@ -152,7 +151,7 @@ func (c *mapToStructCopier) init(dstType, srcType reflect.Type) (err error) {
 			index:           dfDetail.index,
 		}
 		if dfDetail.required {
-			c.dstStructHasRequiredCopying = true
+			c.dstStructRequiredFields++
 		}
 	}
 
