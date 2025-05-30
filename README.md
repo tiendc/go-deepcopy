@@ -26,11 +26,11 @@ go get github.com/tiendc/go-deepcopy
 - [First example](#first-example)
 - [Copy between struct fields with different names](#copy-between-struct-fields-with-different-names)
 - [Skip copying struct fields](#skip-copying-struct-fields)
+- [Require copying for struct fields](#require-copying-for-struct-fields)
 - [Copy struct fields via struct methods](#copy-struct-fields-via-struct-methods)
 - [Copy inherited fields from embedded structs](#copy-inherited-fields-from-embedded-structs)
 - [Set destination struct fields as `nil` on `zero`](#set-destination-struct-fields-as-nil-on-zero)
 - [PostCopy event method for structs](#postcopy-event-method-for-structs)
-- [Copy unexported struct fields](#copy-unexported-struct-fields)
 - [Copy between structs and maps](#copy-between-structs-and-maps)
 - [Configure extra copying behaviors](#configure-extra-copying-behaviors)
 
@@ -126,6 +126,30 @@ go get github.com/tiendc/go-deepcopy
     // Output:
     // {I:0 U:2}
     // {I:0 U:22}
+```
+
+### Require copying for struct fields
+
+  [Playground](https://go.dev/play/p/yDlLsv1wBnf)
+
+```go
+    type S struct {
+        U  uint
+        St string
+    }
+    type D struct {
+        I int `copy:",required"`
+        U uint
+    }
+    src := []S{{U: 2, St: "3"}, {U: 22, St: "33"}}
+    var dst []D
+    err := deepcopy.Copy(&dst, &src)
+    if err != nil {
+        fmt.Println("error:", err)
+    }
+
+    // Output:
+    // error: ErrFieldRequireCopying: struct field 'main.D[I]' requires copying
 ```
 
 ### Copy struct fields via struct methods
@@ -274,35 +298,6 @@ convenient when you don't want to send something like a date of `0001-01-01` to 
     // {I:22 St:aaaa}
 ```
 
-### Copy unexported struct fields
-
-- By default, unexported struct fields will be ignored when copy. If you want to copy them, use tag attribute `required`.
-
-  [Playground](https://go.dev/play/p/HYWFbnafdfr)
-
-```go
-    type S struct {
-        i  int
-        U  uint
-        St string
-    }
-    type D struct {
-        i int `copy:",required"`
-        U uint
-    }
-    src := []S{{i: 1, U: 2, St: "3"}, {i: 11, U: 22, St: "33"}}
-    var dst []D
-    _ = deepcopy.Copy(&dst, &src)
-
-    for _, d := range dst {
-        fmt.Printf("%+v\n", d)
-    }
-
-    // Output:
-    // {i:1 U:2}
-    // {i:11 U:22}
-```
-
 ### Copy between structs and maps
 
   [Playground](https://go.dev/play/p/eS8RWB8dKmL)
@@ -390,25 +385,46 @@ convenient when you don't want to send something like a date of `0001-01-01` to 
 
 ### Go-DeepCopy vs ManualCopy vs Other Libs
 
-This benchmark is done on go-deepcopy v1.6.0.
+This benchmark is done on go-deepcopy v1.6.0 using Go 1.24.2
 
+**Copy between 2 different struct types** 
   [Benchmark code](https://gist.github.com/tiendc/0a739fd880b9aac5373de95458d54808)
 
 ```
 Go-DeepCopy
-Go-DeepCopy-10             1685755               706.5 ns/op           344 B/op          4 allocs/op
+Go-DeepCopy-10         	 1734240	       682.3 ns/op	     344 B/op	       4 allocs/op
 ManualCopy
-ManualCopy-10             28962333                41.10 ns/op           80 B/op          1 allocs/op
+ManualCopy-10          	32983267	        35.59 ns/op	      80 B/op	       1 allocs/op
 JinzhuCopier
-JinzhuCopier-10             135469              8947 ns/op            1296 B/op         88 allocs/op
+JinzhuCopier-10        	  146428	      8138 ns/op	     912 B/op	      40 allocs/op
 ulule/deepcopier
-ulule/deepcopier-10          40062             29720 ns/op           52480 B/op        766 allocs/op
+ulule/deepcopier-10    	   47137	     25717 ns/op	   50752 B/op	     550 allocs/op
 mohae/deepcopy
-mohae/deepcopy-10           505458              2194 ns/op            1512 B/op         72 allocs/op
+mohae/deepcopy-10      	  597488	      1828 ns/op	    1208 B/op	      42 allocs/op
 barkimedes/deepcopy
-barkimedes/deepcopy-10      511608              2380 ns/op            1704 B/op         45 allocs/op
+barkimedes/deepcopy-10 	  528232	      2206 ns/op	    1464 B/op	      15 allocs/op
 mitchellh/copystructure
-mitchellh/copystructure-10  104089             11430 ns/op            8136 B/op        251 allocs/op
+mitchellh/copystructure-10   123484	      9545 ns/op	    7592 B/op	     191 allocs/op
+```
+
+**Copy between the same struct type**
+  [Benchmark code](https://gist.github.com/tiendc/502725af830d454382234e8dca22dbdf)
+
+```
+Go-DeepCopy
+Go-DeepCopy-10         	 2693502	       438.0 ns/op	     248 B/op	       4 allocs/op
+ManualCopy
+ManualCopy-10          	36577604	        32.17 ns/op	      80 B/op	       1 allocs/op
+JinzhuCopier
+JinzhuCopier-10        	  187950	      6468 ns/op	     824 B/op	      39 allocs/op
+ulule/deepcopier
+ulule/deepcopier-10    	   50193	     23170 ns/op	   44768 B/op	     486 allocs/op
+mohae/deepcopy
+mohae/deepcopy-10      	 1000000	      1083 ns/op	     640 B/op	      26 allocs/op
+barkimedes/deepcopy
+barkimedes/deepcopy-10 	  886911	      1345 ns/op	     888 B/op	      13 allocs/op
+mitchellh/copystructure
+mitchellh/copystructure-10   212216	      5559 ns/op	    4552 B/op	     116 allocs/op
 ```
 
 ## Contributing
