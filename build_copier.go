@@ -237,11 +237,13 @@ func buildCopierForStandardStructs(dstType, srcType reflect.Type) copier {
 	switch srcType.PkgPath() {
 	// When copy time.Time -> time.Time or derived type
 	case "time":
-		if dstType == srcType {
-			return defaultDirectCopier
-		}
-		if dstType.ConvertibleTo(srcType) {
-			return defaultConvCopier
+		if srcType.Name() == "Time" {
+			if dstType == srcType {
+				return defaultDirectCopier
+			}
+			if dstType.ConvertibleTo(srcType) {
+				return defaultConvCopier
+			}
 		}
 	// When copy unique.Handle[T] -> unique.Handle[T] or derived type
 	case "unique":
