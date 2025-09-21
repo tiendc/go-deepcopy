@@ -1278,3 +1278,50 @@ func Test_Copy_struct_with_post_copy_event(t *testing.T) {
 		assert.Equal(t, testD25{I: 1, S: "a"}, d) // won't work
 	})
 }
+
+func Test_Copy_struct_on_standard_types(t *testing.T) {
+	t.Run("#1: Copy time.Time to time.Time", func(t *testing.T) {
+		s := time.Now()
+		var d time.Time
+		err := Copy(&d, s)
+		assert.Nil(t, err)
+		assert.Equal(t, d, s)
+
+		// time.Time as struct fields
+		type S struct {
+			T time.Time
+		}
+		type D struct {
+			T time.Time
+		}
+		s2 := S{T: time.Now()}
+		var d2 D
+		err = Copy(&d2, s2)
+		assert.Nil(t, err)
+		assert.Equal(t, d2.T, s2.T)
+	})
+
+	t.Run("#2: Copy time.Time to derived type", func(t *testing.T) {
+		type T time.Time
+		s := time.Now()
+		var d T
+		err := Copy(&d, s)
+		assert.Nil(t, err)
+		assert.Equal(t, time.Time(d), s)
+
+		// time.Time as struct fields
+		type S struct {
+			T time.Time
+		}
+		type D struct {
+			T T
+		}
+		s2 := S{T: time.Now()}
+		var d2 D
+		err = Copy(&d2, s2)
+		assert.Nil(t, err)
+		assert.Equal(t, time.Time(d2.T), s2.T)
+	})
+
+	// NOTE: unique.Handle[T] is available from Go1.23, it is tested in the relevant test file
+}
